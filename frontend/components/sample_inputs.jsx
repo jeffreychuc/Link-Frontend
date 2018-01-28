@@ -42,14 +42,14 @@ export default class SampleInputs extends React.Component {
           <i className="fa fa-comment-o" aria-hidden="true"></i>
           <span className="gradient-border"></span>
           <div>
-            I'm trying to find some grub in SF.
+            I'm trying to find some grub around 825 Broadway in SF.
           </div>
         </div>
         <div className="sample-container">
           <i className="fa fa-comment-o" aria-hidden="true"></i>
           <span className="gradient-border"></span>
           <div>
-            Are there any open clinics nearby? I'm around 825 Broadway in SF.
+            Are there any open clinics nearby? I'm in SF.
           </div>
         </div>
 

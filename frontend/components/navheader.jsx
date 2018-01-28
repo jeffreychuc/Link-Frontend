@@ -10,7 +10,7 @@ export default class NavHeader extends React.Component {
     return (
       <Navbar className="test" collapseOnSelect>
         <Navbar.Header>
-          <Navbar.Brand>
+          <Navbar.Brand className="header-brand">
             <a href="#brand">
               <img
                 src="https://res.cloudinary.com/trwong/image/upload/v1517102892/white-link_lnsvx8.png"
@@ -18,6 +18,7 @@ export default class NavHeader extends React.Component {
                 className="link-logo"
                 />
             </a>
+            <span className="logo">Link</span>
           </Navbar.Brand>
           <Navbar.Toggle />
         </Navbar.Header>
@@ -31,18 +32,21 @@ export default class NavHeader extends React.Component {
             </NavItem> */}
           </Nav>
           <Nav pullRight>
-            <NavItem eventKey={1} href="#">
-              ABOUT
+            <NavItem eventKey={1} href="#" onClick={() => window.scrollTo(0, 0)}>
+              Home
             </NavItem>
-            <NavItem eventKey={2} href="https://github.com/jeffreychuc/Link-Frontend" target="_blank">
+            <NavItem eventKey={2} href="#" onClick={ () => window.scrollTo(0, document.body.scrollHeight)}>
+              About
+            </NavItem>
+            <NavItem eventKey={3} href="https://github.com/jeffreychuc/Link-Frontend" target="_blank">
               Github
             </NavItem>
-            <NavDropdown eventKey={3} title="More" id="basic-nav-dropdown">
-              <MenuItem eventKey={3.1}>Contact Us</MenuItem>
-              {/* <MenuItem eventKey={3.2}>Another action</MenuItem>
-              <MenuItem eventKey={3.3}>Something else here</MenuItem>
+            <NavDropdown eventKey={4} title="More" id="basic-nav-dropdown">
+              <MenuItem eventKey={4.1}>Contact Us</MenuItem>
+              {/* <MenuItem eventKey={4.2}>Another action</MenuItem>
+              <MenuItem eventKey={4.3}>Something else here</MenuItem>
               <MenuItem divider />
-              <MenuItem eventKey={3.3}>Separated link</MenuItem> */}
+              <MenuItem eventKey={4.3}>Separated link</MenuItem> */}
             </NavDropdown>
           </Nav>
         </Navbar.Collapse>
