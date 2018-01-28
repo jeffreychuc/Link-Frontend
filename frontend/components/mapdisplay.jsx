@@ -57,8 +57,8 @@ export class MapContainer extends React.Component {
 
   render() {
     return this.props.google ? (
-      <div className='mapFrame' id="map-container">
-
+      <div className='mapFrame'>
+        <h2 className='header'>Nearby Services</h2>
         <Map google={this.props.google}
             onClick={this.onMapClicked}
             style={{margin: '0 auto', width: '90%', height: '90%', position: 'relative'}}
@@ -116,7 +116,7 @@ export class MapContainer extends React.Component {
           </InfoWindow>
 
         </Map>
-        <Contact />
+        {/* <Contact /> */}
       </div>
     ) : (<div>loading</div>);
   }

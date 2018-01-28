@@ -3,7 +3,7 @@ var ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 module.exports = {
   context: __dirname,
-  entry: "./frontend/happ.jsx",
+  entry: "./frontend/link.jsx",
   output: {
     path: path.resolve(__dirname),
     filename: "bundle.js"
