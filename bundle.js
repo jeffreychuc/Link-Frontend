@@ -1198,7 +1198,316 @@ function toArray(children) {
 });
 
 /***/ }),
-/* 17 */,
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var bind = __webpack_require__(175);
+var isBuffer = __webpack_require__(401);
+
+/*global toString:true*/
+
+// utils is a library of generic helper functions non-specific to axios
+
+var toString = Object.prototype.toString;
+
+/**
+ * Determine if a value is an Array
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an Array, otherwise false
+ */
+function isArray(val) {
+  return toString.call(val) === '[object Array]';
+}
+
+/**
+ * Determine if a value is an ArrayBuffer
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an ArrayBuffer, otherwise false
+ */
+function isArrayBuffer(val) {
+  return toString.call(val) === '[object ArrayBuffer]';
+}
+
+/**
+ * Determine if a value is a FormData
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an FormData, otherwise false
+ */
+function isFormData(val) {
+  return (typeof FormData !== 'undefined') && (val instanceof FormData);
+}
+
+/**
+ * Determine if a value is a view on an ArrayBuffer
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a view on an ArrayBuffer, otherwise false
+ */
+function isArrayBufferView(val) {
+  var result;
+  if ((typeof ArrayBuffer !== 'undefined') && (ArrayBuffer.isView)) {
+    result = ArrayBuffer.isView(val);
+  } else {
+    result = (val) && (val.buffer) && (val.buffer instanceof ArrayBuffer);
+  }
+  return result;
+}
+
+/**
+ * Determine if a value is a String
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a String, otherwise false
+ */
+function isString(val) {
+  return typeof val === 'string';
+}
+
+/**
+ * Determine if a value is a Number
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Number, otherwise false
+ */
+function isNumber(val) {
+  return typeof val === 'number';
+}
+
+/**
+ * Determine if a value is undefined
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if the value is undefined, otherwise false
+ */
+function isUndefined(val) {
+  return typeof val === 'undefined';
+}
+
+/**
+ * Determine if a value is an Object
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is an Object, otherwise false
+ */
+function isObject(val) {
+  return val !== null && typeof val === 'object';
+}
+
+/**
+ * Determine if a value is a Date
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Date, otherwise false
+ */
+function isDate(val) {
+  return toString.call(val) === '[object Date]';
+}
+
+/**
+ * Determine if a value is a File
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a File, otherwise false
+ */
+function isFile(val) {
+  return toString.call(val) === '[object File]';
+}
+
+/**
+ * Determine if a value is a Blob
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Blob, otherwise false
+ */
+function isBlob(val) {
+  return toString.call(val) === '[object Blob]';
+}
+
+/**
+ * Determine if a value is a Function
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Function, otherwise false
+ */
+function isFunction(val) {
+  return toString.call(val) === '[object Function]';
+}
+
+/**
+ * Determine if a value is a Stream
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Stream, otherwise false
+ */
+function isStream(val) {
+  return isObject(val) && isFunction(val.pipe);
+}
+
+/**
+ * Determine if a value is a URLSearchParams object
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a URLSearchParams object, otherwise false
+ */
+function isURLSearchParams(val) {
+  return typeof URLSearchParams !== 'undefined' && val instanceof URLSearchParams;
+}
+
+/**
+ * Trim excess whitespace off the beginning and end of a string
+ *
+ * @param {String} str The String to trim
+ * @returns {String} The String freed of excess whitespace
+ */
+function trim(str) {
+  return str.replace(/^\s*/, '').replace(/\s*$/, '');
+}
+
+/**
+ * Determine if we're running in a standard browser environment
+ *
+ * This allows axios to run in a web worker, and react-native.
+ * Both environments support XMLHttpRequest, but not fully standard globals.
+ *
+ * web workers:
+ *  typeof window -> undefined
+ *  typeof document -> undefined
+ *
+ * react-native:
+ *  navigator.product -> 'ReactNative'
+ */
+function isStandardBrowserEnv() {
+  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+    return false;
+  }
+  return (
+    typeof window !== 'undefined' &&
+    typeof document !== 'undefined'
+  );
+}
+
+/**
+ * Iterate over an Array or an Object invoking a function for each item.
+ *
+ * If `obj` is an Array callback will be called passing
+ * the value, index, and complete array for each item.
+ *
+ * If 'obj' is an Object callback will be called passing
+ * the value, key, and complete object for each property.
+ *
+ * @param {Object|Array} obj The object to iterate
+ * @param {Function} fn The callback to invoke for each item
+ */
+function forEach(obj, fn) {
+  // Don't bother if no value provided
+  if (obj === null || typeof obj === 'undefined') {
+    return;
+  }
+
+  // Force an array if not already something iterable
+  if (typeof obj !== 'object') {
+    /*eslint no-param-reassign:0*/
+    obj = [obj];
+  }
+
+  if (isArray(obj)) {
+    // Iterate over array values
+    for (var i = 0, l = obj.length; i < l; i++) {
+      fn.call(null, obj[i], i, obj);
+    }
+  } else {
+    // Iterate over object keys
+    for (var key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        fn.call(null, obj[key], key, obj);
+      }
+    }
+  }
+}
+
+/**
+ * Accepts varargs expecting each argument to be an object, then
+ * immutably merges the properties of each object and returns result.
+ *
+ * When multiple objects contain the same key the later object in
+ * the arguments list will take precedence.
+ *
+ * Example:
+ *
+ * ```js
+ * var result = merge({foo: 123}, {foo: 456});
+ * console.log(result.foo); // outputs 456
+ * ```
+ *
+ * @param {Object} obj1 Object to merge
+ * @returns {Object} Result of all merge properties
+ */
+function merge(/* obj1, obj2, obj3, ... */) {
+  var result = {};
+  function assignValue(val, key) {
+    if (typeof result[key] === 'object' && typeof val === 'object') {
+      result[key] = merge(result[key], val);
+    } else {
+      result[key] = val;
+    }
+  }
+
+  for (var i = 0, l = arguments.length; i < l; i++) {
+    forEach(arguments[i], assignValue);
+  }
+  return result;
+}
+
+/**
+ * Extends object a by mutably adding to it the properties of object b.
+ *
+ * @param {Object} a The object to be extended
+ * @param {Object} b The object to copy properties from
+ * @param {Object} thisArg The object to bind function to
+ * @return {Object} The resulting value of object a
+ */
+function extend(a, b, thisArg) {
+  forEach(b, function assignValue(val, key) {
+    if (thisArg && typeof val === 'function') {
+      a[key] = bind(val, thisArg);
+    } else {
+      a[key] = val;
+    }
+  });
+  return a;
+}
+
+module.exports = {
+  isArray: isArray,
+  isArrayBuffer: isArrayBuffer,
+  isBuffer: isBuffer,
+  isFormData: isFormData,
+  isArrayBufferView: isArrayBufferView,
+  isString: isString,
+  isNumber: isNumber,
+  isObject: isObject,
+  isUndefined: isUndefined,
+  isDate: isDate,
+  isFile: isFile,
+  isBlob: isBlob,
+  isFunction: isFunction,
+  isStream: isStream,
+  isURLSearchParams: isURLSearchParams,
+  isStandardBrowserEnv: isStandardBrowserEnv,
+  forEach: forEach,
+  merge: merge,
+  extend: extend,
+  trim: trim
+};
+
+
+/***/ }),
 /* 18 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1592,6 +1901,25 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 /***/ }),
 /* 26 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_Provider__ = __webpack_require__(192);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_connectAdvanced__ = __webpack_require__(114);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__connect_connect__ = __webpack_require__(196);
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "Provider", function() { return __WEBPACK_IMPORTED_MODULE_0__components_Provider__["b"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "createProvider", function() { return __WEBPACK_IMPORTED_MODULE_0__components_Provider__["a"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "connectAdvanced", function() { return __WEBPACK_IMPORTED_MODULE_1__components_connectAdvanced__["a"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "connect", function() { return __WEBPACK_IMPORTED_MODULE_2__connect_connect__["a"]; });
+
+
+
+
+
+
+/***/ }),
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var anObject = __webpack_require__(34);
@@ -1613,7 +1941,7 @@ exports.f = __webpack_require__(36) ? Object.defineProperty : function definePro
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports) {
 
 var hasOwnProperty = {}.hasOwnProperty;
@@ -1623,7 +1951,7 @@ module.exports = function (it, key) {
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // to indexed object, toObject with fallback for non-array-like ES3 strings
@@ -1635,7 +1963,7 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1672,7 +2000,7 @@ exports.default = (0, _createUncontrollable2.default)(mixin, set);
 module.exports = exports['default'];
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1696,7 +2024,7 @@ module.exports = emptyObject;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1756,29 +2084,10 @@ module.exports = invariant;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
-/* 32 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_Provider__ = __webpack_require__(192);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_connectAdvanced__ = __webpack_require__(114);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__connect_connect__ = __webpack_require__(196);
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "Provider", function() { return __WEBPACK_IMPORTED_MODULE_0__components_Provider__["b"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "createProvider", function() { return __WEBPACK_IMPORTED_MODULE_0__components_Provider__["a"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "connectAdvanced", function() { return __WEBPACK_IMPORTED_MODULE_1__components_connectAdvanced__["a"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "connect", function() { return __WEBPACK_IMPORTED_MODULE_2__connect_connect__["a"]; });
-
-
-
-
-
-
-/***/ }),
 /* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var dP = __webpack_require__(26);
+var dP = __webpack_require__(27);
 var createDesc = __webpack_require__(45);
 module.exports = __webpack_require__(36) ? function (object, key, value) {
   return dP.f(object, key, createDesc(1, value));
@@ -2373,7 +2682,7 @@ module.exports = exports['default'];
 
 
 if (process.env.NODE_ENV !== 'production') {
-  var invariant = __webpack_require__(31);
+  var invariant = __webpack_require__(32);
   var warning = __webpack_require__(41);
   var ReactPropTypesSecret = __webpack_require__(67);
   var loggedTypeFailures = {};
@@ -2671,7 +2980,7 @@ module.exports = exports['default'];
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_13_prop_types_extra_lib_elementType___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_13_prop_types_extra_lib_elementType__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_14_prop_types_extra_lib_isRequiredForA11y__ = __webpack_require__(58);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_14_prop_types_extra_lib_isRequiredForA11y___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_14_prop_types_extra_lib_isRequiredForA11y__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_15_uncontrollable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_16_warning__ = __webpack_require__(10);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_16_warning___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_16_warning__);
@@ -3408,8 +3717,143 @@ function getContainer(container, defaultContainer) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 65 */,
-/* 66 */,
+/* 65 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var randomFromSeed = __webpack_require__(420);
+
+var ORIGINAL = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-';
+var alphabet;
+var previousSeed;
+
+var shuffled;
+
+function reset() {
+    shuffled = false;
+}
+
+function setCharacters(_alphabet_) {
+    if (!_alphabet_) {
+        if (alphabet !== ORIGINAL) {
+            alphabet = ORIGINAL;
+            reset();
+        }
+        return;
+    }
+
+    if (_alphabet_ === alphabet) {
+        return;
+    }
+
+    if (_alphabet_.length !== ORIGINAL.length) {
+        throw new Error('Custom alphabet for shortid must be ' + ORIGINAL.length + ' unique characters. You submitted ' + _alphabet_.length + ' characters: ' + _alphabet_);
+    }
+
+    var unique = _alphabet_.split('').filter(function(item, ind, arr){
+       return ind !== arr.lastIndexOf(item);
+    });
+
+    if (unique.length) {
+        throw new Error('Custom alphabet for shortid must be ' + ORIGINAL.length + ' unique characters. These characters were not unique: ' + unique.join(', '));
+    }
+
+    alphabet = _alphabet_;
+    reset();
+}
+
+function characters(_alphabet_) {
+    setCharacters(_alphabet_);
+    return alphabet;
+}
+
+function setSeed(seed) {
+    randomFromSeed.seed(seed);
+    if (previousSeed !== seed) {
+        reset();
+        previousSeed = seed;
+    }
+}
+
+function shuffle() {
+    if (!alphabet) {
+        setCharacters(ORIGINAL);
+    }
+
+    var sourceArray = alphabet.split('');
+    var targetArray = [];
+    var r = randomFromSeed.nextValue();
+    var characterIndex;
+
+    while (sourceArray.length > 0) {
+        r = randomFromSeed.nextValue();
+        characterIndex = Math.floor(r * sourceArray.length);
+        targetArray.push(sourceArray.splice(characterIndex, 1)[0]);
+    }
+    return targetArray.join('');
+}
+
+function getShuffled() {
+    if (shuffled) {
+        return shuffled;
+    }
+    shuffled = shuffle();
+    return shuffled;
+}
+
+/**
+ * lookup shuffled letter
+ * @param index
+ * @returns {string}
+ */
+function lookup(index) {
+    var alphabetShuffled = getShuffled();
+    return alphabetShuffled[index];
+}
+
+module.exports = {
+    characters: characters,
+    seed: setSeed,
+    lookup: lookup,
+    shuffled: getShuffled
+};
+
+
+/***/ }),
+/* 66 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports);
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports);
+    global.String = mod.exports;
+  }
+})(this, function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  var camelize = exports.camelize = function camelize(str) {
+    return str.split(' ').map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join('');
+  };
+});
+
+/***/ }),
 /* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4288,8 +4732,8 @@ module.exports = Object.create || function create(O, Properties) {
 /* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var def = __webpack_require__(26).f;
-var has = __webpack_require__(27);
+var def = __webpack_require__(27).f;
+var has = __webpack_require__(28);
 var TAG = __webpack_require__(21)('toStringTag');
 
 module.exports = function (it, tag, stat) {
@@ -4312,7 +4756,7 @@ var global = __webpack_require__(23);
 var core = __webpack_require__(20);
 var LIBRARY = __webpack_require__(89);
 var wksExt = __webpack_require__(92);
-var defineProperty = __webpack_require__(26).f;
+var defineProperty = __webpack_require__(27).f;
 module.exports = function (name) {
   var $Symbol = core.Symbol || (core.Symbol = LIBRARY ? {} : global.Symbol || {});
   if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty($Symbol, name, { value: wksExt.f(name) });
@@ -5192,7 +5636,7 @@ exports.default = (0, _createChainableTypeChecker2.default)(elementType);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_react___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4_react__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_prop_types__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5_prop_types__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_uncontrollable__);
 
 
@@ -5534,7 +5978,106 @@ TabContent.childContextTypes = childContextTypes;
 /* harmony default export */ __webpack_exports__["a"] = (Object(__WEBPACK_IMPORTED_MODULE_9__utils_bootstrapUtils__["bsClass"])('tab', TabContent));
 
 /***/ }),
-/* 105 */,
+/* 105 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {
+
+var utils = __webpack_require__(17);
+var normalizeHeaderName = __webpack_require__(403);
+
+var DEFAULT_CONTENT_TYPE = {
+  'Content-Type': 'application/x-www-form-urlencoded'
+};
+
+function setContentTypeIfUnset(headers, value) {
+  if (!utils.isUndefined(headers) && utils.isUndefined(headers['Content-Type'])) {
+    headers['Content-Type'] = value;
+  }
+}
+
+function getDefaultAdapter() {
+  var adapter;
+  if (typeof XMLHttpRequest !== 'undefined') {
+    // For browsers use XHR adapter
+    adapter = __webpack_require__(176);
+  } else if (typeof process !== 'undefined') {
+    // For node use HTTP adapter
+    adapter = __webpack_require__(176);
+  }
+  return adapter;
+}
+
+var defaults = {
+  adapter: getDefaultAdapter(),
+
+  transformRequest: [function transformRequest(data, headers) {
+    normalizeHeaderName(headers, 'Content-Type');
+    if (utils.isFormData(data) ||
+      utils.isArrayBuffer(data) ||
+      utils.isBuffer(data) ||
+      utils.isStream(data) ||
+      utils.isFile(data) ||
+      utils.isBlob(data)
+    ) {
+      return data;
+    }
+    if (utils.isArrayBufferView(data)) {
+      return data.buffer;
+    }
+    if (utils.isURLSearchParams(data)) {
+      setContentTypeIfUnset(headers, 'application/x-www-form-urlencoded;charset=utf-8');
+      return data.toString();
+    }
+    if (utils.isObject(data)) {
+      setContentTypeIfUnset(headers, 'application/json;charset=utf-8');
+      return JSON.stringify(data);
+    }
+    return data;
+  }],
+
+  transformResponse: [function transformResponse(data) {
+    /*eslint no-param-reassign:0*/
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e) { /* Ignore */ }
+    }
+    return data;
+  }],
+
+  timeout: 0,
+
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+
+  maxContentLength: -1,
+
+  validateStatus: function validateStatus(status) {
+    return status >= 200 && status < 300;
+  }
+};
+
+defaults.headers = {
+  common: {
+    'Accept': 'application/json, text/plain, */*'
+  }
+};
+
+utils.forEach(['delete', 'get', 'head'], function forEachMethodNoData(method) {
+  defaults.headers[method] = {};
+});
+
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  defaults.headers[method] = utils.merge(DEFAULT_CONTENT_TYPE);
+});
+
+module.exports = defaults;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ }),
 /* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -7557,8 +8100,8 @@ module.exports = function (it) {
 /* 133 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var has = __webpack_require__(27);
-var toIObject = __webpack_require__(28);
+var has = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 var arrayIndexOf = __webpack_require__(252)(false);
 var IE_PROTO = __webpack_require__(83)('IE_PROTO');
 
@@ -7634,7 +8177,7 @@ var LIBRARY = __webpack_require__(89);
 var $export = __webpack_require__(22);
 var redefine = __webpack_require__(138);
 var hide = __webpack_require__(33);
-var has = __webpack_require__(27);
+var has = __webpack_require__(28);
 var Iterators = __webpack_require__(48);
 var $iterCreate = __webpack_require__(257);
 var setToStringTag = __webpack_require__(91);
@@ -7727,9 +8270,9 @@ exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
 
 var pIE = __webpack_require__(47);
 var createDesc = __webpack_require__(45);
-var toIObject = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 var toPrimitive = __webpack_require__(79);
-var has = __webpack_require__(27);
+var has = __webpack_require__(28);
 var IE8_DOM_DEFINE = __webpack_require__(131);
 var gOPD = Object.getOwnPropertyDescriptor;
 
@@ -7764,7 +8307,7 @@ exports.f = __webpack_require__(36) ? gOPD : function getOwnPropertyDescriptor(O
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_prop_types__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_react__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_react___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_react__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_uncontrollable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__utils_bootstrapUtils__ = __webpack_require__(8);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__utils_ValidComponentChildren__ = __webpack_require__(16);
@@ -7936,7 +8479,7 @@ module.exports = { "default": __webpack_require__(284), __esModule: true };
 /***/ (function(module, exports, __webpack_require__) {
 
 var getKeys = __webpack_require__(46);
-var toIObject = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 var isEnum = __webpack_require__(47).f;
 module.exports = function (isEntries) {
   return function (it) {
@@ -11564,13 +12107,334 @@ ToggleButton.propTypes = propTypes;
 /* harmony default export */ __webpack_exports__["a"] = (ToggleButton);
 
 /***/ }),
-/* 175 */,
-/* 176 */,
-/* 177 */,
-/* 178 */,
-/* 179 */,
-/* 180 */,
-/* 181 */,
+/* 175 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = function bind(fn, thisArg) {
+  return function wrap() {
+    var args = new Array(arguments.length);
+    for (var i = 0; i < args.length; i++) {
+      args[i] = arguments[i];
+    }
+    return fn.apply(thisArg, args);
+  };
+};
+
+
+/***/ }),
+/* 176 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {
+
+var utils = __webpack_require__(17);
+var settle = __webpack_require__(404);
+var buildURL = __webpack_require__(406);
+var parseHeaders = __webpack_require__(407);
+var isURLSameOrigin = __webpack_require__(408);
+var createError = __webpack_require__(177);
+var btoa = (typeof window !== 'undefined' && window.btoa && window.btoa.bind(window)) || __webpack_require__(409);
+
+module.exports = function xhrAdapter(config) {
+  return new Promise(function dispatchXhrRequest(resolve, reject) {
+    var requestData = config.data;
+    var requestHeaders = config.headers;
+
+    if (utils.isFormData(requestData)) {
+      delete requestHeaders['Content-Type']; // Let the browser set it
+    }
+
+    var request = new XMLHttpRequest();
+    var loadEvent = 'onreadystatechange';
+    var xDomain = false;
+
+    // For IE 8/9 CORS support
+    // Only supports POST and GET calls and doesn't returns the response headers.
+    // DON'T do this for testing b/c XMLHttpRequest is mocked, not XDomainRequest.
+    if (process.env.NODE_ENV !== 'test' &&
+        typeof window !== 'undefined' &&
+        window.XDomainRequest && !('withCredentials' in request) &&
+        !isURLSameOrigin(config.url)) {
+      request = new window.XDomainRequest();
+      loadEvent = 'onload';
+      xDomain = true;
+      request.onprogress = function handleProgress() {};
+      request.ontimeout = function handleTimeout() {};
+    }
+
+    // HTTP basic authentication
+    if (config.auth) {
+      var username = config.auth.username || '';
+      var password = config.auth.password || '';
+      requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
+    }
+
+    request.open(config.method.toUpperCase(), buildURL(config.url, config.params, config.paramsSerializer), true);
+
+    // Set the request timeout in MS
+    request.timeout = config.timeout;
+
+    // Listen for ready state
+    request[loadEvent] = function handleLoad() {
+      if (!request || (request.readyState !== 4 && !xDomain)) {
+        return;
+      }
+
+      // The request errored out and we didn't get a response, this will be
+      // handled by onerror instead
+      // With one exception: request that using file: protocol, most browsers
+      // will return status as 0 even though it's a successful request
+      if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf('file:') === 0)) {
+        return;
+      }
+
+      // Prepare the response
+      var responseHeaders = 'getAllResponseHeaders' in request ? parseHeaders(request.getAllResponseHeaders()) : null;
+      var responseData = !config.responseType || config.responseType === 'text' ? request.responseText : request.response;
+      var response = {
+        data: responseData,
+        // IE sends 1223 instead of 204 (https://github.com/axios/axios/issues/201)
+        status: request.status === 1223 ? 204 : request.status,
+        statusText: request.status === 1223 ? 'No Content' : request.statusText,
+        headers: responseHeaders,
+        config: config,
+        request: request
+      };
+
+      settle(resolve, reject, response);
+
+      // Clean up request
+      request = null;
+    };
+
+    // Handle low level network errors
+    request.onerror = function handleError() {
+      // Real errors are hidden from us by the browser
+      // onerror should only fire if it's a network error
+      reject(createError('Network Error', config, null, request));
+
+      // Clean up request
+      request = null;
+    };
+
+    // Handle timeout
+    request.ontimeout = function handleTimeout() {
+      reject(createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED',
+        request));
+
+      // Clean up request
+      request = null;
+    };
+
+    // Add xsrf header
+    // This is only done if running in a standard browser environment.
+    // Specifically not if we're in a web worker, or react-native.
+    if (utils.isStandardBrowserEnv()) {
+      var cookies = __webpack_require__(410);
+
+      // Add xsrf header
+      var xsrfValue = (config.withCredentials || isURLSameOrigin(config.url)) && config.xsrfCookieName ?
+          cookies.read(config.xsrfCookieName) :
+          undefined;
+
+      if (xsrfValue) {
+        requestHeaders[config.xsrfHeaderName] = xsrfValue;
+      }
+    }
+
+    // Add headers to the request
+    if ('setRequestHeader' in request) {
+      utils.forEach(requestHeaders, function setRequestHeader(val, key) {
+        if (typeof requestData === 'undefined' && key.toLowerCase() === 'content-type') {
+          // Remove Content-Type if data is undefined
+          delete requestHeaders[key];
+        } else {
+          // Otherwise add header to the request
+          request.setRequestHeader(key, val);
+        }
+      });
+    }
+
+    // Add withCredentials to request if needed
+    if (config.withCredentials) {
+      request.withCredentials = true;
+    }
+
+    // Add responseType to request if needed
+    if (config.responseType) {
+      try {
+        request.responseType = config.responseType;
+      } catch (e) {
+        // Expected DOMException thrown by browsers not compatible XMLHttpRequest Level 2.
+        // But, this can be suppressed for 'json' type as it can be parsed by default 'transformResponse' function.
+        if (config.responseType !== 'json') {
+          throw e;
+        }
+      }
+    }
+
+    // Handle progress if needed
+    if (typeof config.onDownloadProgress === 'function') {
+      request.addEventListener('progress', config.onDownloadProgress);
+    }
+
+    // Not all browsers support upload events
+    if (typeof config.onUploadProgress === 'function' && request.upload) {
+      request.upload.addEventListener('progress', config.onUploadProgress);
+    }
+
+    if (config.cancelToken) {
+      // Handle cancellation
+      config.cancelToken.promise.then(function onCanceled(cancel) {
+        if (!request) {
+          return;
+        }
+
+        request.abort();
+        reject(cancel);
+        // Clean up request
+        request = null;
+      });
+    }
+
+    if (requestData === undefined) {
+      requestData = null;
+    }
+
+    // Send the request
+    request.send(requestData);
+  });
+};
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ }),
+/* 177 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var enhanceError = __webpack_require__(405);
+
+/**
+ * Create an Error with the specified message, config, error code, request and response.
+ *
+ * @param {string} message The error message.
+ * @param {Object} config The config.
+ * @param {string} [code] The error code (for example, 'ECONNABORTED').
+ * @param {Object} [request] The request.
+ * @param {Object} [response] The response.
+ * @returns {Error} The created error.
+ */
+module.exports = function createError(message, config, code, request, response) {
+  var error = new Error(message);
+  return enhanceError(error, config, code, request, response);
+};
+
+
+/***/ }),
+/* 178 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = function isCancel(value) {
+  return !!(value && value.__CANCEL__);
+};
+
+
+/***/ }),
+/* 179 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * A `Cancel` is an object that is thrown when an operation is canceled.
+ *
+ * @class
+ * @param {string=} message The message.
+ */
+function Cancel(message) {
+  this.message = message;
+}
+
+Cancel.prototype.toString = function toString() {
+  return 'Cancel' + (this.message ? ': ' + this.message : '');
+};
+
+Cancel.prototype.__CANCEL__ = true;
+
+module.exports = Cancel;
+
+
+/***/ }),
+/* 180 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var randomByte = __webpack_require__(421);
+
+function encode(lookup, number) {
+    var loopCounter = 0;
+    var done;
+
+    var str = '';
+
+    while (!done) {
+        str = str + lookup( ( (number >> (4 * loopCounter)) & 0x0f ) | randomByte() );
+        done = number < (Math.pow(16, loopCounter + 1 ) );
+        loopCounter++;
+    }
+    return str;
+}
+
+module.exports = encode;
+
+
+/***/ }),
+/* 181 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ * @typechecks static-only
+ */
+
+
+
+/**
+ * Memoizes the return value of a function that accepts one string argument.
+ */
+
+function memoizeStringOnly(callback) {
+  var cache = {};
+  return function (string) {
+    if (!cache.hasOwnProperty(string)) {
+      cache[string] = callback.call(this, string);
+    }
+    return cache[string];
+  };
+}
+
+module.exports = memoizeStringOnly;
+
+/***/ }),
 /* 182 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11589,11 +12453,11 @@ var _root = __webpack_require__(191);
 
 var _root2 = _interopRequireDefault(_root);
 
-var _store = __webpack_require__(442);
+var _store = __webpack_require__(444);
 
 var _store2 = _interopRequireDefault(_store);
 
-var _application = __webpack_require__(446);
+var _application = __webpack_require__(448);
 
 var _application2 = _interopRequireDefault(_application);
 
@@ -11621,7 +12485,7 @@ document.addEventListener("DOMContentLoaded", function () {
  * LICENSE file in the root directory of this source tree.
  */
 
-var m=__webpack_require__(25),n=__webpack_require__(30),p=__webpack_require__(19),q="function"===typeof Symbol&&Symbol["for"],r=q?Symbol["for"]("react.element"):60103,t=q?Symbol["for"]("react.call"):60104,u=q?Symbol["for"]("react.return"):60105,v=q?Symbol["for"]("react.portal"):60106,w=q?Symbol["for"]("react.fragment"):60107,x="function"===typeof Symbol&&Symbol.iterator;
+var m=__webpack_require__(25),n=__webpack_require__(31),p=__webpack_require__(19),q="function"===typeof Symbol&&Symbol["for"],r=q?Symbol["for"]("react.element"):60103,t=q?Symbol["for"]("react.call"):60104,u=q?Symbol["for"]("react.return"):60105,v=q?Symbol["for"]("react.portal"):60106,w=q?Symbol["for"]("react.fragment"):60107,x="function"===typeof Symbol&&Symbol.iterator;
 function y(a){for(var b=arguments.length-1,e="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,c=0;c<b;c++)e+="\x26args[]\x3d"+encodeURIComponent(arguments[c+1]);b=Error(e+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}
 var z={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}};function A(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}A.prototype.isReactComponent={};A.prototype.setState=function(a,b){"object"!==typeof a&&"function"!==typeof a&&null!=a?y("85"):void 0;this.updater.enqueueSetState(this,a,b,"setState")};A.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};
 function B(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}function C(){}C.prototype=A.prototype;var D=B.prototype=new C;D.constructor=B;m(D,A.prototype);D.isPureReactComponent=!0;function E(a,b,e){this.props=a;this.context=b;this.refs=n;this.updater=e||z}var F=E.prototype=new C;F.constructor=E;m(F,A.prototype);F.unstable_isAsyncReactComponent=!0;F.render=function(){return this.props.children};var G={current:null},H=Object.prototype.hasOwnProperty,I={key:!0,ref:!0,__self:!0,__source:!0};
@@ -11658,8 +12522,8 @@ if (process.env.NODE_ENV !== "production") {
 'use strict';
 
 var _assign = __webpack_require__(25);
-var emptyObject = __webpack_require__(30);
-var invariant = __webpack_require__(31);
+var emptyObject = __webpack_require__(31);
+var invariant = __webpack_require__(32);
 var warning = __webpack_require__(41);
 var emptyFunction = __webpack_require__(19);
 var checkPropTypes = __webpack_require__(51);
@@ -13017,7 +13881,7 @@ module.exports = react;
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__webpack_require__(0),l=__webpack_require__(106),B=__webpack_require__(25),C=__webpack_require__(19),ba=__webpack_require__(107),da=__webpack_require__(108),ea=__webpack_require__(109),fa=__webpack_require__(110),ia=__webpack_require__(111),D=__webpack_require__(30);
+var aa=__webpack_require__(0),l=__webpack_require__(106),B=__webpack_require__(25),C=__webpack_require__(19),ba=__webpack_require__(107),da=__webpack_require__(108),ea=__webpack_require__(109),fa=__webpack_require__(110),ia=__webpack_require__(111),D=__webpack_require__(31);
 function E(a){for(var b=arguments.length-1,c="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,d=0;d<b;d++)c+="\x26args[]\x3d"+encodeURIComponent(arguments[d+1]);b=Error(c+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}aa?void 0:E("227");
 var oa={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function pa(a,b){return(a&b)===b}
 var ta={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=ta,c=a.Properties||{},d=a.DOMAttributeNamespaces||{},e=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in c){ua.hasOwnProperty(f)?E("48",f):void 0;var g=f.toLowerCase(),h=c[f];g={attributeName:g,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:pa(h,b.MUST_USE_PROPERTY),
@@ -13315,7 +14179,7 @@ if (process.env.NODE_ENV !== "production") {
 'use strict';
 
 var React = __webpack_require__(0);
-var invariant = __webpack_require__(31);
+var invariant = __webpack_require__(32);
 var warning = __webpack_require__(41);
 var ExecutionEnvironment = __webpack_require__(106);
 var _assign = __webpack_require__(25);
@@ -13325,7 +14189,7 @@ var getActiveElement = __webpack_require__(108);
 var shallowEqual = __webpack_require__(109);
 var containsNode = __webpack_require__(110);
 var focusNode = __webpack_require__(111);
-var emptyObject = __webpack_require__(30);
+var emptyObject = __webpack_require__(31);
 var checkPropTypes = __webpack_require__(51);
 var hyphenateStyleName = __webpack_require__(68);
 var camelizeStyleName = __webpack_require__(112);
@@ -28780,7 +29644,7 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(26);
 
 var _reactRouterDom = __webpack_require__(218);
 
@@ -28906,7 +29770,7 @@ function createProvider() {
 
 
 var emptyFunction = __webpack_require__(19);
-var invariant = __webpack_require__(31);
+var invariant = __webpack_require__(32);
 var warning = __webpack_require__(41);
 var assign = __webpack_require__(25);
 
@@ -29456,7 +30320,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
 
 var emptyFunction = __webpack_require__(19);
-var invariant = __webpack_require__(31);
+var invariant = __webpack_require__(32);
 var ReactPropTypesSecret = __webpack_require__(67);
 
 module.exports = function() {
@@ -33628,7 +34492,7 @@ var _mapdisplay_container = __webpack_require__(397);
 
 var _mapdisplay_container2 = _interopRequireDefault(_mapdisplay_container);
 
-var _about_container = __webpack_require__(440);
+var _about_container = __webpack_require__(442);
 
 var _about_container2 = _interopRequireDefault(_about_container);
 
@@ -33659,7 +34523,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(26);
 
 var _navheader = __webpack_require__(246);
 
@@ -33900,7 +34764,7 @@ module.exports = !$assign || __webpack_require__(44)(function () {
 
 // false -> Array#indexOf
 // true  -> Array#includes
-var toIObject = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 var toLength = __webpack_require__(135);
 var toAbsoluteIndex = __webpack_require__(253);
 module.exports = function (IS_INCLUDES) {
@@ -33998,7 +34862,7 @@ module.exports = function (Constructor, NAME, next) {
 /* 258 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var dP = __webpack_require__(26);
+var dP = __webpack_require__(27);
 var anObject = __webpack_require__(34);
 var getKeys = __webpack_require__(46);
 
@@ -34026,7 +34890,7 @@ module.exports = document && document.documentElement;
 /***/ (function(module, exports, __webpack_require__) {
 
 // 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
-var has = __webpack_require__(27);
+var has = __webpack_require__(28);
 var toObject = __webpack_require__(87);
 var IE_PROTO = __webpack_require__(83)('IE_PROTO');
 var ObjectProto = Object.prototype;
@@ -34074,7 +34938,7 @@ for (var i = 0; i < DOMIterables.length; i++) {
 var addToUnscopables = __webpack_require__(263);
 var step = __webpack_require__(264);
 var Iterators = __webpack_require__(48);
-var toIObject = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 
 // 22.1.3.4 Array.prototype.entries()
 // 22.1.3.13 Array.prototype.keys()
@@ -34147,7 +35011,7 @@ module.exports = __webpack_require__(20).Symbol;
 
 // ECMAScript 6 symbols shim
 var global = __webpack_require__(23);
-var has = __webpack_require__(27);
+var has = __webpack_require__(28);
 var DESCRIPTORS = __webpack_require__(36);
 var $export = __webpack_require__(22);
 var redefine = __webpack_require__(138);
@@ -34163,13 +35027,13 @@ var enumKeys = __webpack_require__(269);
 var isArray = __webpack_require__(270);
 var anObject = __webpack_require__(34);
 var isObject = __webpack_require__(35);
-var toIObject = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 var toPrimitive = __webpack_require__(79);
 var createDesc = __webpack_require__(45);
 var _create = __webpack_require__(90);
 var gOPNExt = __webpack_require__(271);
 var $GOPD = __webpack_require__(140);
-var $DP = __webpack_require__(26);
+var $DP = __webpack_require__(27);
 var $keys = __webpack_require__(46);
 var gOPD = $GOPD.f;
 var dP = $DP.f;
@@ -34386,8 +35250,8 @@ setToStringTag(global.JSON, 'JSON', true);
 
 var META = __webpack_require__(54)('meta');
 var isObject = __webpack_require__(35);
-var has = __webpack_require__(27);
-var setDesc = __webpack_require__(26).f;
+var has = __webpack_require__(28);
+var setDesc = __webpack_require__(27).f;
 var id = 0;
 var isExtensible = Object.isExtensible || function () {
   return true;
@@ -34476,7 +35340,7 @@ module.exports = Array.isArray || function isArray(arg) {
 /***/ (function(module, exports, __webpack_require__) {
 
 // fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
-var toIObject = __webpack_require__(28);
+var toIObject = __webpack_require__(29);
 var gOPN = __webpack_require__(139).f;
 var toString = {}.toString;
 
@@ -37030,7 +37894,7 @@ module.exports = function (it) {
 
 "use strict";
 
-var $defineProperty = __webpack_require__(26);
+var $defineProperty = __webpack_require__(27);
 var createDesc = __webpack_require__(45);
 
 module.exports = function (object, index, value) {
@@ -40768,7 +41632,7 @@ ModalDialog.propTypes = propTypes;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_prop_types__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_prop_types_extra_lib_elementType__ = __webpack_require__(11);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_prop_types_extra_lib_elementType___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_prop_types_extra_lib_elementType__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_9_uncontrollable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__Grid__ = __webpack_require__(154);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__NavbarBrand__ = __webpack_require__(165);
@@ -42949,7 +43813,7 @@ var Last = createButton('Last', '\xBB');
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_prop_types__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_react__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_react___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_react__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_9_uncontrollable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_warning__ = __webpack_require__(10);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10_warning___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_10_warning__);
@@ -44579,7 +45443,7 @@ Table.defaultProps = defaultProps;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_prop_types__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types_extra_lib_isRequiredForA11y__ = __webpack_require__(58);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types_extra_lib_isRequiredForA11y___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_prop_types_extra_lib_isRequiredForA11y__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_uncontrollable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__Nav__ = __webpack_require__(164);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__NavItem__ = __webpack_require__(166);
@@ -44875,7 +45739,7 @@ Thumbnail.propTypes = propTypes;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_react___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6_react__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_invariant__ = __webpack_require__(13);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_invariant___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_invariant__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8_uncontrollable___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_8_uncontrollable__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__utils_createChainedFunction__ = __webpack_require__(14);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__utils_ValidComponentChildren__ = __webpack_require__(16);
@@ -45249,7 +46113,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(26);
 
 var _splash = __webpack_require__(394);
 
@@ -45363,7 +46227,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(26);
 
 var _sample_inputs = __webpack_require__(396);
 
@@ -45516,7 +46380,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(26);
 
 var _mapdisplay = __webpack_require__(398);
 
@@ -45536,53 +46400,7648 @@ exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(
 
 /***/ }),
 /* 398 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-throw new Error("Module build failed: SyntaxError: Unexpected token (60:1)\n\n\u001b[0m \u001b[90m 58 | \u001b[39m  render() {\n \u001b[90m 59 | \u001b[39m    \u001b[36mreturn\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mprops\u001b[33m.\u001b[39mgoogle \u001b[33m?\u001b[39m (\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 60 | \u001b[39m\u001b[33m<<\u001b[39m\u001b[33m<<\u001b[39m\u001b[33m<<\u001b[39m\u001b[33m<\u001b[39m \u001b[33mHEAD\u001b[39m\n \u001b[90m    | \u001b[39m \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 61 | \u001b[39m      \u001b[33m<\u001b[39m\u001b[33mdiv\u001b[39m className\u001b[33m=\u001b[39m\u001b[32m'mapFrame'\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 62 | \u001b[39m        \u001b[33m<\u001b[39m\u001b[33mh2\u001b[39m className\u001b[33m=\u001b[39m\u001b[32m'header'\u001b[39m\u001b[33m>\u001b[39m\u001b[33mNearby\u001b[39m \u001b[33mServices\u001b[39m\u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33mh2\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 63 | \u001b[39m\u001b[33m===\u001b[39m\u001b[33m===\u001b[39m\u001b[33m=\u001b[39m\u001b[0m\n");
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MapContainer = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(0);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _axios = __webpack_require__(399);
+
+var _axios2 = _interopRequireDefault(_axios);
+
+var _shortid = __webpack_require__(418);
+
+var _shortid2 = _interopRequireDefault(_shortid);
+
+var _googleMapsReact = __webpack_require__(426);
+
+var _data = __webpack_require__(439);
+
+var _contact_container = __webpack_require__(440);
+
+var _contact_container2 = _interopRequireDefault(_contact_container);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var MapContainer = exports.MapContainer = function (_React$Component) {
+  _inherits(MapContainer, _React$Component);
+
+  function MapContainer(props) {
+    _classCallCheck(this, MapContainer);
+
+    var _this = _possibleConstructorReturn(this, (MapContainer.__proto__ || Object.getPrototypeOf(MapContainer)).call(this, props));
+
+    _this.state = {
+      showingInfoWindow: false,
+      activeMarker: {},
+      selectedPlace: {},
+      shelterMarkers: _data.shelterData,
+      foodMarkers: _data.foodData,
+      clinicMarkers: _data.clinicData
+    };
+    _this.onMarkerClick = _this.onMarkerClick.bind(_this);
+    _this.onMapClicked = _this.onMapClicked.bind(_this);
+    return _this;
+  }
+
+  _createClass(MapContainer, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      // axios.get('https://impacthub-first.herokuapp.com/locations/shelter')
+      // .then(function (response) {
+      //   console.log('success');
+      //   console.log(response);
+      // })
+      // .catch(function (error) {
+      //   console.log('wtf');
+      //   console.log(error);
+      // });
+      // this.setState({shelterMarkers: shelterData, foodMarkers: foodData, clinicMarkers: clinicData});
+    }
+  }, {
+    key: 'onMarkerClick',
+    value: function onMarkerClick(props, marker, e) {
+      console.log('marker was clicked');
+      this.setState({
+        selectedPlace: props,
+        activeMarker: marker,
+        showingInfoWindow: true
+      });
+    }
+  }, {
+    key: 'onMapClicked',
+    value: function onMapClicked(props) {
+      console.log('map was clicked');
+      if (this.state.showingInfoWindow) {
+        this.setState({
+          showingInfoWindow: false,
+          activeMarker: null
+        });
+      }
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      return this.props.google ? _react2.default.createElement(
+        'div',
+        { className: 'mapFrame', id: 'map-container' },
+        _react2.default.createElement(
+          _googleMapsReact.Map,
+          { google: this.props.google,
+            onClick: this.onMapClicked,
+            style: { margin: '0 auto', width: '90%', height: '90%', position: 'relative' },
+            className: 'map',
+            zoom: 15 },
+          this.state.shelterMarkers.map(function (shelter) {
+            return _react2.default.createElement(_googleMapsReact.Marker, {
+              onClick: _this2.onMarkerClick,
+              key: _shortid2.default.generate(),
+              name: shelter.name,
+              address: shelter.formatted_address,
+              position: shelter.geometry.location,
+              icon: {
+                url: "assets/housing_pin.png",
+                anchor: new _this2.props.google.maps.Point(32, 32),
+                scaledSize: new _this2.props.google.maps.Size(64, 64)
+              } });
+          }),
+          this.state.foodMarkers.map(function (food) {
+            return _react2.default.createElement(_googleMapsReact.Marker, {
+              onClick: _this2.onMarkerClick,
+              key: _shortid2.default.generate(),
+              name: food.name,
+              address: food.formatted_address,
+              position: food.geometry.location,
+              icon: {
+                url: "assets/food_pin.png",
+                anchor: new _this2.props.google.maps.Point(32, 32),
+                scaledSize: new _this2.props.google.maps.Size(64, 64)
+              } });
+          }),
+          this.state.clinicMarkers.map(function (clinic) {
+            return _react2.default.createElement(_googleMapsReact.Marker, {
+              onClick: _this2.onMarkerClick,
+              key: _shortid2.default.generate(),
+              name: clinic.name,
+              address: clinic.formatted_address,
+              position: clinic.geometry.location,
+              icon: {
+                url: "assets/clinic_pin.png",
+                anchor: new _this2.props.google.maps.Point(32, 32),
+                scaledSize: new _this2.props.google.maps.Size(64, 64)
+              } });
+          }),
+          _react2.default.createElement(
+            _googleMapsReact.InfoWindow,
+            {
+              marker: this.state.activeMarker,
+              visible: this.state.showingInfoWindow },
+            _react2.default.createElement(
+              'div',
+              { className: 'mapCallout' },
+              _react2.default.createElement(
+                'h2',
+                null,
+                this.state.selectedPlace.name
+              ),
+              _react2.default.createElement(
+                'h3',
+                null,
+                this.state.selectedPlace.address
+              )
+            )
+          )
+        ),
+        _react2.default.createElement(_contact_container2.default, null)
+      ) : _react2.default.createElement(
+        'div',
+        null,
+        'loading'
+      );
+    }
+  }]);
+
+  return MapContainer;
+}(_react2.default.Component);
+
+exports.default = (0, _googleMapsReact.GoogleApiWrapper)({
+  apiKey: "AIzaSyAyesbQMyKVVbBgKVi2g6VX7mop2z96jBo"
+})(MapContainer);
 
 /***/ }),
-/* 399 */,
-/* 400 */,
-/* 401 */,
-/* 402 */,
-/* 403 */,
-/* 404 */,
-/* 405 */,
-/* 406 */,
-/* 407 */,
-/* 408 */,
-/* 409 */,
-/* 410 */,
-/* 411 */,
-/* 412 */,
-/* 413 */,
-/* 414 */,
-/* 415 */,
-/* 416 */,
-/* 417 */,
-/* 418 */,
-/* 419 */,
-/* 420 */,
-/* 421 */,
-/* 422 */,
-/* 423 */,
-/* 424 */,
-/* 425 */,
-/* 426 */,
-/* 427 */,
-/* 428 */,
-/* 429 */,
-/* 430 */,
-/* 431 */,
-/* 432 */,
-/* 433 */,
-/* 434 */,
-/* 435 */,
-/* 436 */,
-/* 437 */,
-/* 438 */,
-/* 439 */,
+/* 399 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(400);
+
+/***/ }),
+/* 400 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+var bind = __webpack_require__(175);
+var Axios = __webpack_require__(402);
+var defaults = __webpack_require__(105);
+
+/**
+ * Create an instance of Axios
+ *
+ * @param {Object} defaultConfig The default config for the instance
+ * @return {Axios} A new instance of Axios
+ */
+function createInstance(defaultConfig) {
+  var context = new Axios(defaultConfig);
+  var instance = bind(Axios.prototype.request, context);
+
+  // Copy axios.prototype to instance
+  utils.extend(instance, Axios.prototype, context);
+
+  // Copy context to instance
+  utils.extend(instance, context);
+
+  return instance;
+}
+
+// Create the default instance to be exported
+var axios = createInstance(defaults);
+
+// Expose Axios class to allow class inheritance
+axios.Axios = Axios;
+
+// Factory for creating new instances
+axios.create = function create(instanceConfig) {
+  return createInstance(utils.merge(defaults, instanceConfig));
+};
+
+// Expose Cancel & CancelToken
+axios.Cancel = __webpack_require__(179);
+axios.CancelToken = __webpack_require__(416);
+axios.isCancel = __webpack_require__(178);
+
+// Expose all/spread
+axios.all = function all(promises) {
+  return Promise.all(promises);
+};
+axios.spread = __webpack_require__(417);
+
+module.exports = axios;
+
+// Allow use of default import syntax in TypeScript
+module.exports.default = axios;
+
+
+/***/ }),
+/* 401 */
+/***/ (function(module, exports) {
+
+/*!
+ * Determine if an object is a Buffer
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+
+// The _isBuffer check is for Safari 5-7 support, because it's missing
+// Object.prototype.constructor. Remove this eventually
+module.exports = function (obj) {
+  return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer)
+}
+
+function isBuffer (obj) {
+  return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+}
+
+// For Node v0.10 support. Remove this eventually.
+function isSlowBuffer (obj) {
+  return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
+}
+
+
+/***/ }),
+/* 402 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var defaults = __webpack_require__(105);
+var utils = __webpack_require__(17);
+var InterceptorManager = __webpack_require__(411);
+var dispatchRequest = __webpack_require__(412);
+
+/**
+ * Create a new instance of Axios
+ *
+ * @param {Object} instanceConfig The default config for the instance
+ */
+function Axios(instanceConfig) {
+  this.defaults = instanceConfig;
+  this.interceptors = {
+    request: new InterceptorManager(),
+    response: new InterceptorManager()
+  };
+}
+
+/**
+ * Dispatch a request
+ *
+ * @param {Object} config The config specific for this request (merged with this.defaults)
+ */
+Axios.prototype.request = function request(config) {
+  /*eslint no-param-reassign:0*/
+  // Allow for axios('example/url'[, config]) a la fetch API
+  if (typeof config === 'string') {
+    config = utils.merge({
+      url: arguments[0]
+    }, arguments[1]);
+  }
+
+  config = utils.merge(defaults, this.defaults, { method: 'get' }, config);
+  config.method = config.method.toLowerCase();
+
+  // Hook up interceptors middleware
+  var chain = [dispatchRequest, undefined];
+  var promise = Promise.resolve(config);
+
+  this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
+    chain.unshift(interceptor.fulfilled, interceptor.rejected);
+  });
+
+  this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
+    chain.push(interceptor.fulfilled, interceptor.rejected);
+  });
+
+  while (chain.length) {
+    promise = promise.then(chain.shift(), chain.shift());
+  }
+
+  return promise;
+};
+
+// Provide aliases for supported request methods
+utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
+  /*eslint func-names:0*/
+  Axios.prototype[method] = function(url, config) {
+    return this.request(utils.merge(config || {}, {
+      method: method,
+      url: url
+    }));
+  };
+});
+
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  /*eslint func-names:0*/
+  Axios.prototype[method] = function(url, data, config) {
+    return this.request(utils.merge(config || {}, {
+      method: method,
+      url: url,
+      data: data
+    }));
+  };
+});
+
+module.exports = Axios;
+
+
+/***/ }),
+/* 403 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+module.exports = function normalizeHeaderName(headers, normalizedName) {
+  utils.forEach(headers, function processHeader(value, name) {
+    if (name !== normalizedName && name.toUpperCase() === normalizedName.toUpperCase()) {
+      headers[normalizedName] = value;
+      delete headers[name];
+    }
+  });
+};
+
+
+/***/ }),
+/* 404 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var createError = __webpack_require__(177);
+
+/**
+ * Resolve or reject a Promise based on response status.
+ *
+ * @param {Function} resolve A function that resolves the promise.
+ * @param {Function} reject A function that rejects the promise.
+ * @param {object} response The response.
+ */
+module.exports = function settle(resolve, reject, response) {
+  var validateStatus = response.config.validateStatus;
+  // Note: status is not exposed by XDomainRequest
+  if (!response.status || !validateStatus || validateStatus(response.status)) {
+    resolve(response);
+  } else {
+    reject(createError(
+      'Request failed with status code ' + response.status,
+      response.config,
+      null,
+      response.request,
+      response
+    ));
+  }
+};
+
+
+/***/ }),
+/* 405 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Update an Error with the specified config, error code, and response.
+ *
+ * @param {Error} error The error to update.
+ * @param {Object} config The config.
+ * @param {string} [code] The error code (for example, 'ECONNABORTED').
+ * @param {Object} [request] The request.
+ * @param {Object} [response] The response.
+ * @returns {Error} The error.
+ */
+module.exports = function enhanceError(error, config, code, request, response) {
+  error.config = config;
+  if (code) {
+    error.code = code;
+  }
+  error.request = request;
+  error.response = response;
+  return error;
+};
+
+
+/***/ }),
+/* 406 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+function encode(val) {
+  return encodeURIComponent(val).
+    replace(/%40/gi, '@').
+    replace(/%3A/gi, ':').
+    replace(/%24/g, '$').
+    replace(/%2C/gi, ',').
+    replace(/%20/g, '+').
+    replace(/%5B/gi, '[').
+    replace(/%5D/gi, ']');
+}
+
+/**
+ * Build a URL by appending params to the end
+ *
+ * @param {string} url The base of the url (e.g., http://www.google.com)
+ * @param {object} [params] The params to be appended
+ * @returns {string} The formatted url
+ */
+module.exports = function buildURL(url, params, paramsSerializer) {
+  /*eslint no-param-reassign:0*/
+  if (!params) {
+    return url;
+  }
+
+  var serializedParams;
+  if (paramsSerializer) {
+    serializedParams = paramsSerializer(params);
+  } else if (utils.isURLSearchParams(params)) {
+    serializedParams = params.toString();
+  } else {
+    var parts = [];
+
+    utils.forEach(params, function serialize(val, key) {
+      if (val === null || typeof val === 'undefined') {
+        return;
+      }
+
+      if (utils.isArray(val)) {
+        key = key + '[]';
+      }
+
+      if (!utils.isArray(val)) {
+        val = [val];
+      }
+
+      utils.forEach(val, function parseValue(v) {
+        if (utils.isDate(v)) {
+          v = v.toISOString();
+        } else if (utils.isObject(v)) {
+          v = JSON.stringify(v);
+        }
+        parts.push(encode(key) + '=' + encode(v));
+      });
+    });
+
+    serializedParams = parts.join('&');
+  }
+
+  if (serializedParams) {
+    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
+  }
+
+  return url;
+};
+
+
+/***/ }),
+/* 407 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+// Headers whose duplicates are ignored by node
+// c.f. https://nodejs.org/api/http.html#http_message_headers
+var ignoreDuplicateOf = [
+  'age', 'authorization', 'content-length', 'content-type', 'etag',
+  'expires', 'from', 'host', 'if-modified-since', 'if-unmodified-since',
+  'last-modified', 'location', 'max-forwards', 'proxy-authorization',
+  'referer', 'retry-after', 'user-agent'
+];
+
+/**
+ * Parse headers into an object
+ *
+ * ```
+ * Date: Wed, 27 Aug 2014 08:58:49 GMT
+ * Content-Type: application/json
+ * Connection: keep-alive
+ * Transfer-Encoding: chunked
+ * ```
+ *
+ * @param {String} headers Headers needing to be parsed
+ * @returns {Object} Headers parsed into an object
+ */
+module.exports = function parseHeaders(headers) {
+  var parsed = {};
+  var key;
+  var val;
+  var i;
+
+  if (!headers) { return parsed; }
+
+  utils.forEach(headers.split('\n'), function parser(line) {
+    i = line.indexOf(':');
+    key = utils.trim(line.substr(0, i)).toLowerCase();
+    val = utils.trim(line.substr(i + 1));
+
+    if (key) {
+      if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
+        return;
+      }
+      if (key === 'set-cookie') {
+        parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
+      } else {
+        parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
+      }
+    }
+  });
+
+  return parsed;
+};
+
+
+/***/ }),
+/* 408 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+module.exports = (
+  utils.isStandardBrowserEnv() ?
+
+  // Standard browser envs have full support of the APIs needed to test
+  // whether the request URL is of the same origin as current location.
+  (function standardBrowserEnv() {
+    var msie = /(msie|trident)/i.test(navigator.userAgent);
+    var urlParsingNode = document.createElement('a');
+    var originURL;
+
+    /**
+    * Parse a URL to discover it's components
+    *
+    * @param {String} url The URL to be parsed
+    * @returns {Object}
+    */
+    function resolveURL(url) {
+      var href = url;
+
+      if (msie) {
+        // IE needs attribute set twice to normalize properties
+        urlParsingNode.setAttribute('href', href);
+        href = urlParsingNode.href;
+      }
+
+      urlParsingNode.setAttribute('href', href);
+
+      // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
+      return {
+        href: urlParsingNode.href,
+        protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
+        host: urlParsingNode.host,
+        search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
+        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
+        hostname: urlParsingNode.hostname,
+        port: urlParsingNode.port,
+        pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
+                  urlParsingNode.pathname :
+                  '/' + urlParsingNode.pathname
+      };
+    }
+
+    originURL = resolveURL(window.location.href);
+
+    /**
+    * Determine if a URL shares the same origin as the current location
+    *
+    * @param {String} requestURL The URL to test
+    * @returns {boolean} True if URL shares the same origin, otherwise false
+    */
+    return function isURLSameOrigin(requestURL) {
+      var parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
+      return (parsed.protocol === originURL.protocol &&
+            parsed.host === originURL.host);
+    };
+  })() :
+
+  // Non standard browser envs (web workers, react-native) lack needed support.
+  (function nonStandardBrowserEnv() {
+    return function isURLSameOrigin() {
+      return true;
+    };
+  })()
+);
+
+
+/***/ }),
+/* 409 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+// btoa polyfill for IE<10 courtesy https://github.com/davidchambers/Base64.js
+
+var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+
+function E() {
+  this.message = 'String contains an invalid character';
+}
+E.prototype = new Error;
+E.prototype.code = 5;
+E.prototype.name = 'InvalidCharacterError';
+
+function btoa(input) {
+  var str = String(input);
+  var output = '';
+  for (
+    // initialize result and counter
+    var block, charCode, idx = 0, map = chars;
+    // if the next str index does not exist:
+    //   change the mapping table to "="
+    //   check if d has no fractional digits
+    str.charAt(idx | 0) || (map = '=', idx % 1);
+    // "8 - idx % 1 * 8" generates the sequence 2, 4, 6, 8
+    output += map.charAt(63 & block >> 8 - idx % 1 * 8)
+  ) {
+    charCode = str.charCodeAt(idx += 3 / 4);
+    if (charCode > 0xFF) {
+      throw new E();
+    }
+    block = block << 8 | charCode;
+  }
+  return output;
+}
+
+module.exports = btoa;
+
+
+/***/ }),
+/* 410 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+module.exports = (
+  utils.isStandardBrowserEnv() ?
+
+  // Standard browser envs support document.cookie
+  (function standardBrowserEnv() {
+    return {
+      write: function write(name, value, expires, path, domain, secure) {
+        var cookie = [];
+        cookie.push(name + '=' + encodeURIComponent(value));
+
+        if (utils.isNumber(expires)) {
+          cookie.push('expires=' + new Date(expires).toGMTString());
+        }
+
+        if (utils.isString(path)) {
+          cookie.push('path=' + path);
+        }
+
+        if (utils.isString(domain)) {
+          cookie.push('domain=' + domain);
+        }
+
+        if (secure === true) {
+          cookie.push('secure');
+        }
+
+        document.cookie = cookie.join('; ');
+      },
+
+      read: function read(name) {
+        var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+        return (match ? decodeURIComponent(match[3]) : null);
+      },
+
+      remove: function remove(name) {
+        this.write(name, '', Date.now() - 86400000);
+      }
+    };
+  })() :
+
+  // Non standard browser env (web workers, react-native) lack needed support.
+  (function nonStandardBrowserEnv() {
+    return {
+      write: function write() {},
+      read: function read() { return null; },
+      remove: function remove() {}
+    };
+  })()
+);
+
+
+/***/ }),
+/* 411 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+function InterceptorManager() {
+  this.handlers = [];
+}
+
+/**
+ * Add a new interceptor to the stack
+ *
+ * @param {Function} fulfilled The function to handle `then` for a `Promise`
+ * @param {Function} rejected The function to handle `reject` for a `Promise`
+ *
+ * @return {Number} An ID used to remove interceptor later
+ */
+InterceptorManager.prototype.use = function use(fulfilled, rejected) {
+  this.handlers.push({
+    fulfilled: fulfilled,
+    rejected: rejected
+  });
+  return this.handlers.length - 1;
+};
+
+/**
+ * Remove an interceptor from the stack
+ *
+ * @param {Number} id The ID that was returned by `use`
+ */
+InterceptorManager.prototype.eject = function eject(id) {
+  if (this.handlers[id]) {
+    this.handlers[id] = null;
+  }
+};
+
+/**
+ * Iterate over all the registered interceptors
+ *
+ * This method is particularly useful for skipping over any
+ * interceptors that may have become `null` calling `eject`.
+ *
+ * @param {Function} fn The function to call for each interceptor
+ */
+InterceptorManager.prototype.forEach = function forEach(fn) {
+  utils.forEach(this.handlers, function forEachHandler(h) {
+    if (h !== null) {
+      fn(h);
+    }
+  });
+};
+
+module.exports = InterceptorManager;
+
+
+/***/ }),
+/* 412 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+var transformData = __webpack_require__(413);
+var isCancel = __webpack_require__(178);
+var defaults = __webpack_require__(105);
+var isAbsoluteURL = __webpack_require__(414);
+var combineURLs = __webpack_require__(415);
+
+/**
+ * Throws a `Cancel` if cancellation has been requested.
+ */
+function throwIfCancellationRequested(config) {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested();
+  }
+}
+
+/**
+ * Dispatch a request to the server using the configured adapter.
+ *
+ * @param {object} config The config that is to be used for the request
+ * @returns {Promise} The Promise to be fulfilled
+ */
+module.exports = function dispatchRequest(config) {
+  throwIfCancellationRequested(config);
+
+  // Support baseURL config
+  if (config.baseURL && !isAbsoluteURL(config.url)) {
+    config.url = combineURLs(config.baseURL, config.url);
+  }
+
+  // Ensure headers exist
+  config.headers = config.headers || {};
+
+  // Transform request data
+  config.data = transformData(
+    config.data,
+    config.headers,
+    config.transformRequest
+  );
+
+  // Flatten headers
+  config.headers = utils.merge(
+    config.headers.common || {},
+    config.headers[config.method] || {},
+    config.headers || {}
+  );
+
+  utils.forEach(
+    ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
+    function cleanHeaderConfig(method) {
+      delete config.headers[method];
+    }
+  );
+
+  var adapter = config.adapter || defaults.adapter;
+
+  return adapter(config).then(function onAdapterResolution(response) {
+    throwIfCancellationRequested(config);
+
+    // Transform response data
+    response.data = transformData(
+      response.data,
+      response.headers,
+      config.transformResponse
+    );
+
+    return response;
+  }, function onAdapterRejection(reason) {
+    if (!isCancel(reason)) {
+      throwIfCancellationRequested(config);
+
+      // Transform response data
+      if (reason && reason.response) {
+        reason.response.data = transformData(
+          reason.response.data,
+          reason.response.headers,
+          config.transformResponse
+        );
+      }
+    }
+
+    return Promise.reject(reason);
+  });
+};
+
+
+/***/ }),
+/* 413 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var utils = __webpack_require__(17);
+
+/**
+ * Transform the data for a request or a response
+ *
+ * @param {Object|String} data The data to be transformed
+ * @param {Array} headers The headers for the request or response
+ * @param {Array|Function} fns A single function or Array of functions
+ * @returns {*} The resulting transformed data
+ */
+module.exports = function transformData(data, headers, fns) {
+  /*eslint no-param-reassign:0*/
+  utils.forEach(fns, function transform(fn) {
+    data = fn(data, headers);
+  });
+
+  return data;
+};
+
+
+/***/ }),
+/* 414 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Determines whether the specified URL is absolute
+ *
+ * @param {string} url The URL to test
+ * @returns {boolean} True if the specified URL is absolute, otherwise false
+ */
+module.exports = function isAbsoluteURL(url) {
+  // A URL is considered absolute if it begins with "<scheme>://" or "//" (protocol-relative URL).
+  // RFC 3986 defines scheme name as a sequence of characters beginning with a letter and followed
+  // by any combination of letters, digits, plus, period, or hyphen.
+  return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
+};
+
+
+/***/ }),
+/* 415 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Creates a new URL by combining the specified URLs
+ *
+ * @param {string} baseURL The base URL
+ * @param {string} relativeURL The relative URL
+ * @returns {string} The combined URL
+ */
+module.exports = function combineURLs(baseURL, relativeURL) {
+  return relativeURL
+    ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+    : baseURL;
+};
+
+
+/***/ }),
+/* 416 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var Cancel = __webpack_require__(179);
+
+/**
+ * A `CancelToken` is an object that can be used to request cancellation of an operation.
+ *
+ * @class
+ * @param {Function} executor The executor function.
+ */
+function CancelToken(executor) {
+  if (typeof executor !== 'function') {
+    throw new TypeError('executor must be a function.');
+  }
+
+  var resolvePromise;
+  this.promise = new Promise(function promiseExecutor(resolve) {
+    resolvePromise = resolve;
+  });
+
+  var token = this;
+  executor(function cancel(message) {
+    if (token.reason) {
+      // Cancellation has already been requested
+      return;
+    }
+
+    token.reason = new Cancel(message);
+    resolvePromise(token.reason);
+  });
+}
+
+/**
+ * Throws a `Cancel` if cancellation has been requested.
+ */
+CancelToken.prototype.throwIfRequested = function throwIfRequested() {
+  if (this.reason) {
+    throw this.reason;
+  }
+};
+
+/**
+ * Returns an object that contains a new `CancelToken` and a function that, when called,
+ * cancels the `CancelToken`.
+ */
+CancelToken.source = function source() {
+  var cancel;
+  var token = new CancelToken(function executor(c) {
+    cancel = c;
+  });
+  return {
+    token: token,
+    cancel: cancel
+  };
+};
+
+module.exports = CancelToken;
+
+
+/***/ }),
+/* 417 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Syntactic sugar for invoking a function and expanding an array for arguments.
+ *
+ * Common use case would be to use `Function.prototype.apply`.
+ *
+ *  ```js
+ *  function f(x, y, z) {}
+ *  var args = [1, 2, 3];
+ *  f.apply(null, args);
+ *  ```
+ *
+ * With `spread` this example can be re-written.
+ *
+ *  ```js
+ *  spread(function(x, y, z) {})([1, 2, 3]);
+ *  ```
+ *
+ * @param {Function} callback
+ * @returns {Function}
+ */
+module.exports = function spread(callback) {
+  return function wrap(arr) {
+    return callback.apply(null, arr);
+  };
+};
+
+
+/***/ }),
+/* 418 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+module.exports = __webpack_require__(419);
+
+
+/***/ }),
+/* 419 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var alphabet = __webpack_require__(65);
+var encode = __webpack_require__(180);
+var decode = __webpack_require__(422);
+var build = __webpack_require__(423);
+var isValid = __webpack_require__(424);
+
+// if you are using cluster or multiple servers use this to make each instance
+// has a unique value for worker
+// Note: I don't know if this is automatically set when using third
+// party cluster solutions such as pm2.
+var clusterWorkerId = __webpack_require__(425) || 0;
+
+/**
+ * Set the seed.
+ * Highly recommended if you don't want people to try to figure out your id schema.
+ * exposed as shortid.seed(int)
+ * @param seed Integer value to seed the random alphabet.  ALWAYS USE THE SAME SEED or you might get overlaps.
+ */
+function seed(seedValue) {
+    alphabet.seed(seedValue);
+    return module.exports;
+}
+
+/**
+ * Set the cluster worker or machine id
+ * exposed as shortid.worker(int)
+ * @param workerId worker must be positive integer.  Number less than 16 is recommended.
+ * returns shortid module so it can be chained.
+ */
+function worker(workerId) {
+    clusterWorkerId = workerId;
+    return module.exports;
+}
+
+/**
+ *
+ * sets new characters to use in the alphabet
+ * returns the shuffled alphabet
+ */
+function characters(newCharacters) {
+    if (newCharacters !== undefined) {
+        alphabet.characters(newCharacters);
+    }
+
+    return alphabet.shuffled();
+}
+
+/**
+ * Generate unique id
+ * Returns string id
+ */
+function generate() {
+  return build(clusterWorkerId);
+}
+
+// Export all other functions as properties of the generate function
+module.exports = generate;
+module.exports.generate = generate;
+module.exports.seed = seed;
+module.exports.worker = worker;
+module.exports.characters = characters;
+module.exports.decode = decode;
+module.exports.isValid = isValid;
+
+
+/***/ }),
+/* 420 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+// Found this seed-based random generator somewhere
+// Based on The Central Randomizer 1.3 (C) 1997 by Paul Houle (houle@msc.cornell.edu)
+
+var seed = 1;
+
+/**
+ * return a random number based on a seed
+ * @param seed
+ * @returns {number}
+ */
+function getNextValue() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed/(233280.0);
+}
+
+function setSeed(_seed_) {
+    seed = _seed_;
+}
+
+module.exports = {
+    nextValue: getNextValue,
+    seed: setSeed
+};
+
+
+/***/ }),
+/* 421 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var crypto = typeof window === 'object' && (window.crypto || window.msCrypto); // IE 11 uses window.msCrypto
+
+function randomByte() {
+    if (!crypto || !crypto.getRandomValues) {
+        return Math.floor(Math.random() * 256) & 0x30;
+    }
+    var dest = new Uint8Array(1);
+    crypto.getRandomValues(dest);
+    return dest[0] & 0x30;
+}
+
+module.exports = randomByte;
+
+
+/***/ }),
+/* 422 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var alphabet = __webpack_require__(65);
+
+/**
+ * Decode the id to get the version and worker
+ * Mainly for debugging and testing.
+ * @param id - the shortid-generated id.
+ */
+function decode(id) {
+    var characters = alphabet.shuffled();
+    return {
+        version: characters.indexOf(id.substr(0, 1)) & 0x0f,
+        worker: characters.indexOf(id.substr(1, 1)) & 0x0f
+    };
+}
+
+module.exports = decode;
+
+
+/***/ }),
+/* 423 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var encode = __webpack_require__(180);
+var alphabet = __webpack_require__(65);
+
+// Ignore all milliseconds before a certain time to reduce the size of the date entropy without sacrificing uniqueness.
+// This number should be updated every year or so to keep the generated id short.
+// To regenerate `new Date() - 0` and bump the version. Always bump the version!
+var REDUCE_TIME = 1459707606518;
+
+// don't change unless we change the algos or REDUCE_TIME
+// must be an integer and less than 16
+var version = 6;
+
+// Counter is used when shortid is called multiple times in one second.
+var counter;
+
+// Remember the last time shortid was called in case counter is needed.
+var previousSeconds;
+
+/**
+ * Generate unique id
+ * Returns string id
+ */
+function build(clusterWorkerId) {
+
+    var str = '';
+
+    var seconds = Math.floor((Date.now() - REDUCE_TIME) * 0.001);
+
+    if (seconds === previousSeconds) {
+        counter++;
+    } else {
+        counter = 0;
+        previousSeconds = seconds;
+    }
+
+    str = str + encode(alphabet.lookup, version);
+    str = str + encode(alphabet.lookup, clusterWorkerId);
+    if (counter > 0) {
+        str = str + encode(alphabet.lookup, counter);
+    }
+    str = str + encode(alphabet.lookup, seconds);
+
+    return str;
+}
+
+module.exports = build;
+
+
+/***/ }),
+/* 424 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var alphabet = __webpack_require__(65);
+
+function isShortId(id) {
+    if (!id || typeof id !== 'string' || id.length < 6 ) {
+        return false;
+    }
+
+    var characters = alphabet.characters();
+    var len = id.length;
+    for(var i = 0; i < len;i++) {
+        if (characters.indexOf(id[i]) === -1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+module.exports = isShortId;
+
+
+/***/ }),
+/* 425 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = 0;
+
+
+/***/ }),
+/* 426 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(427), __webpack_require__(431), __webpack_require__(432), __webpack_require__(436), __webpack_require__(437), __webpack_require__(0), __webpack_require__(1), __webpack_require__(12), __webpack_require__(66), __webpack_require__(438), __webpack_require__(13)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports, require('./GoogleApiComponent'), require('./components/Marker'), require('./components/InfoWindow'), require('./components/HeatMap'), require('./components/Polygon'), require('react'), require('prop-types'), require('react-dom'), require('./lib/String'), require('./lib/cancelablePromise'), require('invariant'));
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports, global.GoogleApiComponent, global.Marker, global.InfoWindow, global.HeatMap, global.Polygon, global.react, global.propTypes, global.reactDom, global.String, global.cancelablePromise, global.invariant);
+    global.index = mod.exports;
+  }
+})(this, function (exports, _GoogleApiComponent, _Marker, _InfoWindow, _HeatMap, _Polygon, _react, _propTypes, _reactDom, _String, _cancelablePromise, _invariant) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Map = exports.Polygon = exports.HeatMap = exports.InfoWindow = exports.Marker = exports.GoogleApiWrapper = undefined;
+  Object.defineProperty(exports, 'GoogleApiWrapper', {
+    enumerable: true,
+    get: function () {
+      return _GoogleApiComponent.wrapper;
+    }
+  });
+  Object.defineProperty(exports, 'Marker', {
+    enumerable: true,
+    get: function () {
+      return _Marker.Marker;
+    }
+  });
+  Object.defineProperty(exports, 'InfoWindow', {
+    enumerable: true,
+    get: function () {
+      return _InfoWindow.InfoWindow;
+    }
+  });
+  Object.defineProperty(exports, 'HeatMap', {
+    enumerable: true,
+    get: function () {
+      return _HeatMap.HeatMap;
+    }
+  });
+  Object.defineProperty(exports, 'Polygon', {
+    enumerable: true,
+    get: function () {
+      return _Polygon.Polygon;
+    }
+  });
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  var _reactDom2 = _interopRequireDefault(_reactDom);
+
+  var _invariant2 = _interopRequireDefault(_invariant);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var mapStyles = {
+    container: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%'
+    },
+    map: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      top: 0
+    }
+  };
+
+  var evtNames = ['ready', 'click', 'dragend', 'recenter', 'bounds_changed', 'center_changed', 'dblclick', 'dragstart', 'heading_change', 'idle', 'maptypeid_changed', 'mousemove', 'mouseout', 'mouseover', 'projection_changed', 'resize', 'rightclick', 'tilesloaded', 'tilt_changed', 'zoom_changed'];
+
+  var Map = exports.Map = function (_React$Component) {
+    _inherits(Map, _React$Component);
+
+    function Map(props) {
+      _classCallCheck(this, Map);
+
+      var _this = _possibleConstructorReturn(this, (Map.__proto__ || Object.getPrototypeOf(Map)).call(this, props));
+
+      (0, _invariant2.default)(props.hasOwnProperty('google'), 'You must include a `google` prop.');
+
+      _this.listeners = {};
+      _this.state = {
+        currentLocation: {
+          lat: _this.props.initialCenter.lat,
+          lng: _this.props.initialCenter.lng
+        }
+      };
+      return _this;
+    }
+
+    _createClass(Map, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        var _this2 = this;
+
+        if (this.props.centerAroundCurrentLocation) {
+          if (navigator && navigator.geolocation) {
+            this.geoPromise = (0, _cancelablePromise.makeCancelable)(new Promise(function (resolve, reject) {
+              navigator.geolocation.getCurrentPosition(resolve, reject);
+            }));
+
+            this.geoPromise.promise.then(function (pos) {
+              var coords = pos.coords;
+              _this2.setState({
+                currentLocation: {
+                  lat: coords.latitude,
+                  lng: coords.longitude
+                }
+              });
+            }).catch(function (e) {
+              return e;
+            });
+          }
+        }
+        this.loadMap();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps, prevState) {
+        if (prevProps.google !== this.props.google) {
+          this.loadMap();
+        }
+        if (this.props.visible !== prevProps.visible) {
+          this.restyleMap();
+        }
+        if (this.props.zoom !== prevProps.zoom) {
+          this.map.setZoom(this.props.zoom);
+        }
+        if (this.props.center !== prevProps.center) {
+          this.setState({
+            currentLocation: this.props.center
+          });
+        }
+        if (prevState.currentLocation !== this.state.currentLocation) {
+          this.recenterMap();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        var _this3 = this;
+
+        var google = this.props.google;
+
+        if (this.geoPromise) {
+          this.geoPromise.cancel();
+        }
+        Object.keys(this.listeners).forEach(function (e) {
+          google.maps.event.removeListener(_this3.listeners[e]);
+        });
+      }
+    }, {
+      key: 'loadMap',
+      value: function loadMap() {
+        var _this4 = this;
+
+        if (this.props && this.props.google) {
+          var google = this.props.google;
+
+          var maps = google.maps;
+
+          var mapRef = this.refs.map;
+          var node = _reactDom2.default.findDOMNode(mapRef);
+          var curr = this.state.currentLocation;
+          var center = new maps.LatLng(curr.lat, curr.lng);
+
+          var mapTypeIds = this.props.google.maps.MapTypeId || {};
+          var mapTypeFromProps = String(this.props.mapType).toUpperCase();
+
+          var mapConfig = Object.assign({}, {
+            mapTypeId: mapTypeIds[mapTypeFromProps],
+            center: center,
+            zoom: this.props.zoom,
+            maxZoom: this.props.maxZoom,
+            minZoom: this.props.maxZoom,
+            clickableIcons: !!this.props.clickableIcons,
+            disableDefaultUI: this.props.disableDefaultUI,
+            zoomControl: this.props.zoomControl,
+            mapTypeControl: this.props.mapTypeControl,
+            scaleControl: this.props.scaleControl,
+            streetViewControl: this.props.streetViewControl,
+            panControl: this.props.panControl,
+            rotateControl: this.props.rotateControl,
+            scrollwheel: this.props.scrollwheel,
+            draggable: this.props.draggable,
+            keyboardShortcuts: this.props.keyboardShortcuts,
+            disableDoubleClickZoom: this.props.disableDoubleClickZoom,
+            noClear: this.props.noClear,
+            styles: this.props.styles,
+            gestureHandling: this.props.gestureHandling
+          });
+
+          Object.keys(mapConfig).forEach(function (key) {
+            // Allow to configure mapConfig with 'false'
+            if (mapConfig[key] === null) {
+              delete mapConfig[key];
+            }
+          });
+
+          this.map = new maps.Map(node, mapConfig);
+
+          evtNames.forEach(function (e) {
+            _this4.listeners[e] = _this4.map.addListener(e, _this4.handleEvent(e));
+          });
+          maps.event.trigger(this.map, 'ready');
+          this.forceUpdate();
+        }
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evtName) {
+        var _this5 = this;
+
+        var timeout = void 0;
+        var handlerName = 'on' + (0, _String.camelize)(evtName);
+
+        return function (e) {
+          if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+          }
+          timeout = setTimeout(function () {
+            if (_this5.props[handlerName]) {
+              _this5.props[handlerName](_this5.props, _this5.map, e);
+            }
+          }, 0);
+        };
+      }
+    }, {
+      key: 'recenterMap',
+      value: function recenterMap() {
+        var map = this.map;
+
+        var google = this.props.google;
+
+
+        if (!google) return;
+        var maps = google.maps;
+
+        if (map) {
+          var center = this.state.currentLocation;
+          if (!(center instanceof google.maps.LatLng)) {
+            center = new google.maps.LatLng(center.lat, center.lng);
+          }
+          // map.panTo(center)
+          map.setCenter(center);
+          maps.event.trigger(map, 'recenter');
+        }
+      }
+    }, {
+      key: 'restyleMap',
+      value: function restyleMap() {
+        if (this.map) {
+          var google = this.props.google;
+
+          google.maps.event.trigger(this.map, 'resize');
+        }
+      }
+    }, {
+      key: 'renderChildren',
+      value: function renderChildren() {
+        var _this6 = this;
+
+        var children = this.props.children;
+
+
+        if (!children) return;
+
+        return _react2.default.Children.map(children, function (c) {
+          if (!c) return;
+          return _react2.default.cloneElement(c, {
+            map: _this6.map,
+            google: _this6.props.google,
+            mapCenter: _this6.state.currentLocation
+          });
+        });
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        var style = Object.assign({}, mapStyles.map, this.props.style, {
+          display: this.props.visible ? 'inherit' : 'none'
+        });
+
+        var containerStyles = Object.assign({}, mapStyles.container, this.props.containerStyle);
+
+        return _react2.default.createElement(
+          'div',
+          { style: containerStyles, className: this.props.className },
+          _react2.default.createElement(
+            'div',
+            { style: style, ref: 'map' },
+            'Loading map...'
+          ),
+          this.renderChildren()
+        );
+      }
+    }]);
+
+    return Map;
+  }(_react2.default.Component);
+
+  Map.propTypes = {
+    google: _propTypes2.default.object,
+    zoom: _propTypes2.default.number,
+    centerAroundCurrentLocation: _propTypes2.default.bool,
+    center: _propTypes2.default.object,
+    initialCenter: _propTypes2.default.object,
+    className: _propTypes2.default.string,
+    style: _propTypes2.default.object,
+    containerStyle: _propTypes2.default.object,
+    visible: _propTypes2.default.bool,
+    mapType: _propTypes2.default.string,
+    maxZoom: _propTypes2.default.number,
+    minZoom: _propTypes2.default.number,
+    clickableIcons: _propTypes2.default.bool,
+    disableDefaultUI: _propTypes2.default.bool,
+    zoomControl: _propTypes2.default.bool,
+    mapTypeControl: _propTypes2.default.bool,
+    scaleControl: _propTypes2.default.bool,
+    streetViewControl: _propTypes2.default.bool,
+    panControl: _propTypes2.default.bool,
+    rotateControl: _propTypes2.default.bool,
+    scrollwheel: _propTypes2.default.bool,
+    draggable: _propTypes2.default.bool,
+    keyboardShortcuts: _propTypes2.default.bool,
+    disableDoubleClickZoom: _propTypes2.default.bool,
+    noClear: _propTypes2.default.bool,
+    styles: _propTypes2.default.array,
+    gestureHandling: _propTypes2.default.string
+  };
+
+  evtNames.forEach(function (e) {
+    return Map.propTypes[(0, _String.camelize)(e)] = _propTypes2.default.func;
+  });
+
+  Map.defaultProps = {
+    zoom: 14,
+    initialCenter: {
+      lat: 37.774929,
+      lng: -122.419416
+    },
+    center: {},
+    centerAroundCurrentLocation: false,
+    style: {},
+    containerStyle: {},
+    visible: true
+  };
+
+  exports.default = Map;
+});
+
+/***/ }),
+/* 427 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+    if (true) {
+        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(0), __webpack_require__(12), __webpack_require__(428), __webpack_require__(430)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+    } else if (typeof exports !== "undefined") {
+        factory(exports, require('react'), require('react-dom'), require('./lib/ScriptCache'), require('./lib/GoogleApi'));
+    } else {
+        var mod = {
+            exports: {}
+        };
+        factory(mod.exports, global.react, global.reactDom, global.ScriptCache, global.GoogleApi);
+        global.GoogleApiComponent = mod.exports;
+    }
+})(this, function (exports, _react, _reactDom, _ScriptCache, _GoogleApi) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.wrapper = undefined;
+
+    var _react2 = _interopRequireDefault(_react);
+
+    var _reactDom2 = _interopRequireDefault(_reactDom);
+
+    var _GoogleApi2 = _interopRequireDefault(_GoogleApi);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _createClass = function () {
+        function defineProperties(target, props) {
+            for (var i = 0; i < props.length; i++) {
+                var descriptor = props[i];
+                descriptor.enumerable = descriptor.enumerable || false;
+                descriptor.configurable = true;
+                if ("value" in descriptor) descriptor.writable = true;
+                Object.defineProperty(target, descriptor.key, descriptor);
+            }
+        }
+
+        return function (Constructor, protoProps, staticProps) {
+            if (protoProps) defineProperties(Constructor.prototype, protoProps);
+            if (staticProps) defineProperties(Constructor, staticProps);
+            return Constructor;
+        };
+    }();
+
+    function _possibleConstructorReturn(self, call) {
+        if (!self) {
+            throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+        }
+
+        return call && (typeof call === "object" || typeof call === "function") ? call : self;
+    }
+
+    function _inherits(subClass, superClass) {
+        if (typeof superClass !== "function" && superClass !== null) {
+            throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+        }
+
+        subClass.prototype = Object.create(superClass && superClass.prototype, {
+            constructor: {
+                value: subClass,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            }
+        });
+        if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+    }
+
+    var defaultMapConfig = {};
+    var defaultCreateCache = function defaultCreateCache(options) {
+        options = options || {};
+        var apiKey = options.apiKey;
+        var libraries = options.libraries || ['places'];
+        var version = options.version || '3.29';
+        var language = options.language || 'en';
+
+        return (0, _ScriptCache.ScriptCache)({
+            google: (0, _GoogleApi2.default)({
+                apiKey: apiKey,
+                language: language,
+                libraries: libraries,
+                version: version
+            })
+        });
+    };
+
+    var wrapper = exports.wrapper = function wrapper(options) {
+        return function (WrappedComponent) {
+            var apiKey = options.apiKey;
+            var libraries = options.libraries || ['places'];
+            var version = options.version || '3';
+            var createCache = options.createCache || defaultCreateCache;
+
+            var Wrapper = function (_React$Component) {
+                _inherits(Wrapper, _React$Component);
+
+                function Wrapper(props, context) {
+                    _classCallCheck(this, Wrapper);
+
+                    var _this = _possibleConstructorReturn(this, (Wrapper.__proto__ || Object.getPrototypeOf(Wrapper)).call(this, props, context));
+
+                    _this.scriptCache = createCache(options);
+                    _this.scriptCache.google.onLoad(_this.onLoad.bind(_this));
+
+                    _this.state = {
+                        loaded: false,
+                        map: null,
+                        google: null
+                    };
+                    return _this;
+                }
+
+                _createClass(Wrapper, [{
+                    key: 'onLoad',
+                    value: function onLoad(err, tag) {
+                        this._gapi = window.google;
+
+                        this.setState({ loaded: true, google: this._gapi });
+                    }
+                }, {
+                    key: 'render',
+                    value: function render() {
+                        var props = Object.assign({}, this.props, {
+                            loaded: this.state.loaded,
+                            google: window.google
+                        });
+
+                        return _react2.default.createElement(
+                            'div',
+                            null,
+                            _react2.default.createElement(WrappedComponent, props),
+                            _react2.default.createElement('div', { ref: 'map' })
+                        );
+                    }
+                }]);
+
+                return Wrapper;
+            }(_react2.default.Component);
+
+            return Wrapper;
+        };
+    };
+
+    exports.default = wrapper;
+});
+
+/***/ }),
+/* 428 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+    if (true) {
+        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(429)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+    } else if (typeof exports !== "undefined") {
+        factory(exports, require('./windowOrGlobal'));
+    } else {
+        var mod = {
+            exports: {}
+        };
+        factory(mod.exports, global.windowOrGlobal);
+        global.ScriptCache = mod.exports;
+    }
+})(this, function (exports, window) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    var counter = 0;
+    var scriptMap = typeof window !== 'undefined' && window._scriptMap || new Map();
+    var ScriptCache = exports.ScriptCache = function (global) {
+        global._scriptMap = global._scriptMap || scriptMap;
+        return function ScriptCache(scripts) {
+            var Cache = {};
+
+            Cache._onLoad = function (key) {
+                return function (cb) {
+                    var stored = scriptMap.get(key);
+                    if (stored) {
+                        stored.promise.then(function () {
+                            stored.error ? cb(stored.error) : cb(null, stored);
+                            return stored;
+                        });
+                    } else {
+                        // TODO:
+                    }
+                };
+            };
+
+            Cache._scriptTag = function (key, src) {
+                if (!scriptMap.has(key)) {
+                    var tag = document.createElement('script');
+                    var promise = new Promise(function (resolve, reject) {
+                        var resolved = false,
+                            errored = false,
+                            body = document.getElementsByTagName('body')[0];
+
+                        tag.type = 'text/javascript';
+                        tag.async = false; // Load in order
+
+                        var cbName = 'loaderCB' + counter++ + Date.now();
+                        var cb = void 0;
+
+                        var handleResult = function handleResult(state) {
+                            return function (evt) {
+                                var stored = scriptMap.get(key);
+                                if (state === 'loaded') {
+                                    stored.resolved = true;
+                                    resolve(src);
+                                    // stored.handlers.forEach(h => h.call(null, stored))
+                                    // stored.handlers = []
+                                } else if (state === 'error') {
+                                    stored.errored = true;
+                                    // stored.handlers.forEach(h => h.call(null, stored))
+                                    // stored.handlers = [];
+                                    reject(evt);
+                                }
+                                stored.loaded = true;
+
+                                cleanup();
+                            };
+                        };
+
+                        var cleanup = function cleanup() {
+                            if (global[cbName] && typeof global[cbName] === 'function') {
+                                global[cbName] = null;
+                                delete global[cbName];
+                            }
+                        };
+
+                        tag.onload = handleResult('loaded');
+                        tag.onerror = handleResult('error');
+                        tag.onreadystatechange = function () {
+                            handleResult(tag.readyState);
+                        };
+
+                        // Pick off callback, if there is one
+                        if (src.match(/callback=CALLBACK_NAME/)) {
+                            src = src.replace(/(callback=)[^\&]+/, '$1' + cbName);
+                            cb = window[cbName] = tag.onload;
+                        } else {
+                            tag.addEventListener('load', tag.onload);
+                        }
+                        tag.addEventListener('error', tag.onerror);
+
+                        tag.src = src;
+                        body.appendChild(tag);
+
+                        return tag;
+                    });
+                    var initialState = {
+                        loaded: false,
+                        error: false,
+                        promise: promise,
+                        tag: tag
+                    };
+                    scriptMap.set(key, initialState);
+                }
+                return scriptMap.get(key);
+            };
+
+            // let scriptTags = document.querySelectorAll('script')
+            //
+            // NodeList.prototype.filter = Array.prototype.filter;
+            // NodeList.prototype.map = Array.prototype.map;
+            // const initialScripts = scriptTags
+            //   .filter(s => !!s.src)
+            //   .map(s => s.src.split('?')[0])
+            //   .reduce((memo, script) => {
+            //     memo[script] = script;
+            //     return memo;
+            //   }, {});
+
+            Object.keys(scripts).forEach(function (key) {
+                var script = scripts[key];
+
+                var tag = window._scriptMap.has(key) ? window._scriptMap.get(key).tag : Cache._scriptTag(key, script);
+
+                Cache[key] = {
+                    tag: tag,
+                    onLoad: Cache._onLoad(key)
+                };
+            });
+
+            return Cache;
+        };
+    }(window);
+
+    exports.default = ScriptCache;
+});
+
+/***/ }),
+/* 429 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [module], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(module);
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod);
+    global.windowOrGlobal = mod.exports;
+  }
+})(this, function (module) {
+  'use strict';
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+  };
+
+  module.exports = (typeof self === 'undefined' ? 'undefined' : _typeof(self)) === 'object' && self.self === self && self || (typeof global === 'undefined' ? 'undefined' : _typeof(global)) === 'object' && global.global === global && global || undefined;
+});
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(52)))
+
+/***/ }),
+/* 430 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+    if (true) {
+        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(13)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+    } else if (typeof exports !== "undefined") {
+        factory(exports, require('invariant'));
+    } else {
+        var mod = {
+            exports: {}
+        };
+        factory(mod.exports, global.invariant);
+        global.GoogleApi = mod.exports;
+    }
+})(this, function (exports, _invariant) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.GoogleApi = undefined;
+
+    var _invariant2 = _interopRequireDefault(_invariant);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var GoogleApi = exports.GoogleApi = function GoogleApi(opts) {
+        opts = opts || {};
+
+        (0, _invariant2.default)(opts.hasOwnProperty('apiKey'), 'You must pass an apiKey to use GoogleApi');
+
+        var apiKey = opts.apiKey;
+        var libraries = opts.libraries || ['places'];
+        var client = opts.client;
+        var URL = 'https://maps.googleapis.com/maps/api/js';
+
+        var googleVersion = opts.version || '3';
+
+        var script = null;
+        var google = window.google || null;
+        var loading = false;
+        var channel = null;
+        var language = opts.language;
+        var region = null;
+
+        var onLoadEvents = [];
+
+        var url = function url() {
+            var url = URL;
+            var params = {
+                key: apiKey,
+                callback: 'CALLBACK_NAME',
+                libraries: libraries.join(','),
+                client: client,
+                v: googleVersion,
+                channel: channel,
+                language: language,
+                region: region
+            };
+
+            var paramStr = Object.keys(params).filter(function (k) {
+                return !!params[k];
+            }).map(function (k) {
+                return k + '=' + params[k];
+            }).join('&');
+
+            return url + '?' + paramStr;
+        };
+
+        return url();
+    };
+
+    exports.default = GoogleApi;
+});
+
+/***/ }),
+/* 431 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(0), __webpack_require__(1), __webpack_require__(66)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports, require('react'), require('prop-types'), require('../lib/String'));
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports, global.react, global.propTypes, global.String);
+    global.Marker = mod.exports;
+  }
+})(this, function (exports, _react, _propTypes, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Marker = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'dblclick', 'dragend', 'mousedown', 'mouseout', 'mouseover', 'mouseup', 'recenter'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Marker = exports.Marker = function (_React$Component) {
+    _inherits(Marker, _React$Component);
+
+    function Marker() {
+      _classCallCheck(this, Marker);
+
+      return _possibleConstructorReturn(this, (Marker.__proto__ || Object.getPrototypeOf(Marker)).apply(this, arguments));
+    }
+
+    _createClass(Marker, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.markerPromise = wrappedPromise();
+        this.renderMarker();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || this.props.position !== prevProps.position || this.props.icon !== prevProps.icon) {
+          if (this.marker) {
+            this.marker.setMap(null);
+          }
+          this.renderMarker();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.marker) {
+          this.marker.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderMarker',
+      value: function renderMarker() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            position = _props.position,
+            mapCenter = _props.mapCenter,
+            icon = _props.icon,
+            label = _props.label,
+            draggable = _props.draggable,
+            title = _props.title;
+
+        if (!google) {
+          return null;
+        }
+
+        var pos = position || mapCenter;
+        if (!(pos instanceof google.maps.LatLng)) {
+          position = new google.maps.LatLng(pos.lat, pos.lng);
+        }
+
+        var pref = {
+          map: map,
+          position: position,
+          icon: icon,
+          label: label,
+          title: title,
+          draggable: draggable
+        };
+        this.marker = new google.maps.Marker(pref);
+
+        evtNames.forEach(function (e) {
+          _this2.marker.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.markerPromise.resolve(this.marker);
+      }
+    }, {
+      key: 'getMarker',
+      value: function getMarker() {
+        return this.markerPromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.marker, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return Marker;
+  }(_react2.default.Component);
+
+  Marker.propTypes = {
+    position: _propTypes2.default.object,
+    map: _propTypes2.default.object
+  };
+
+  evtNames.forEach(function (e) {
+    return Marker.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Marker.defaultProps = {
+    name: 'Marker'
+  };
+
+  exports.default = Marker;
+});
+
+/***/ }),
+/* 432 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(0), __webpack_require__(1), __webpack_require__(12), __webpack_require__(433)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports, require('react'), require('prop-types'), require('react-dom'), require('react-dom/server'));
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports, global.react, global.propTypes, global.reactDom, global.server);
+    global.InfoWindow = mod.exports;
+  }
+})(this, function (exports, _react, _propTypes, _reactDom, _server) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.InfoWindow = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  var _reactDom2 = _interopRequireDefault(_reactDom);
+
+  var _server2 = _interopRequireDefault(_server);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var InfoWindow = exports.InfoWindow = function (_React$Component) {
+    _inherits(InfoWindow, _React$Component);
+
+    function InfoWindow() {
+      _classCallCheck(this, InfoWindow);
+
+      return _possibleConstructorReturn(this, (InfoWindow.__proto__ || Object.getPrototypeOf(InfoWindow)).apply(this, arguments));
+    }
+
+    _createClass(InfoWindow, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.renderInfoWindow();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        var _props = this.props,
+            google = _props.google,
+            map = _props.map;
+
+
+        if (!google || !map) {
+          return;
+        }
+
+        if (map !== prevProps.map) {
+          this.renderInfoWindow();
+        }
+
+        if (this.props.position !== prevProps.position) {
+          this.updatePosition();
+        }
+
+        if (this.props.children !== prevProps.children) {
+          this.updateContent();
+        }
+
+        if (this.props.visible !== prevProps.visible || this.props.marker !== prevProps.marker || this.props.position !== prevProps.position) {
+          this.props.visible ? this.openWindow() : this.closeWindow();
+        }
+      }
+    }, {
+      key: 'renderInfoWindow',
+      value: function renderInfoWindow() {
+        var _props2 = this.props,
+            map = _props2.map,
+            google = _props2.google,
+            mapCenter = _props2.mapCenter;
+
+
+        if (!google || !google.maps) {
+          return;
+        }
+
+        var iw = this.infowindow = new google.maps.InfoWindow({
+          content: ''
+        });
+
+        google.maps.event.addListener(iw, 'closeclick', this.onClose.bind(this));
+        google.maps.event.addListener(iw, 'domready', this.onOpen.bind(this));
+      }
+    }, {
+      key: 'onOpen',
+      value: function onOpen() {
+        if (this.props.onOpen) {
+          this.props.onOpen();
+        }
+      }
+    }, {
+      key: 'onClose',
+      value: function onClose() {
+        if (this.props.onClose) {
+          this.props.onClose();
+        }
+      }
+    }, {
+      key: 'openWindow',
+      value: function openWindow() {
+        this.infowindow.open(this.props.map, this.props.marker);
+      }
+    }, {
+      key: 'updatePosition',
+      value: function updatePosition() {
+        var pos = this.props.position;
+        if (!(pos instanceof google.maps.LatLng)) {
+          pos = pos && new google.maps.LatLng(pos.lat, pos.lng);
+        }
+        this.infowindow.setPosition(pos);
+      }
+    }, {
+      key: 'updateContent',
+      value: function updateContent() {
+        var content = this.renderChildren();
+        this.infowindow.setContent(content);
+      }
+    }, {
+      key: 'closeWindow',
+      value: function closeWindow() {
+        this.infowindow.close();
+      }
+    }, {
+      key: 'renderChildren',
+      value: function renderChildren() {
+        var children = this.props.children;
+
+        return _server2.default.renderToString(children);
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return InfoWindow;
+  }(_react2.default.Component);
+
+  InfoWindow.propTypes = {
+    children: _propTypes2.default.element.isRequired,
+    map: _propTypes2.default.object,
+    marker: _propTypes2.default.object,
+    position: _propTypes2.default.object,
+    visible: _propTypes2.default.bool,
+
+    // callbacks
+    onClose: _propTypes2.default.func,
+    onOpen: _propTypes2.default.func
+  };
+
+  InfoWindow.defaultProps = {
+    visible: false
+  };
+
+  exports.default = InfoWindow;
+});
+
+/***/ }),
+/* 433 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = __webpack_require__(434);
+} else {
+  module.exports = __webpack_require__(435);
+}
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ }),
+/* 434 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/** @license React v16.2.0
+ * react-dom-server.browser.production.min.js
+ *
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+var h=__webpack_require__(25),n=__webpack_require__(0),aa=__webpack_require__(19),t=__webpack_require__(31),ba=__webpack_require__(68),ca=__webpack_require__(181);
+function w(a){for(var b=arguments.length-1,g="Minified React error #"+a+"; visit http://facebook.github.io/react/docs/error-decoder.html?invariant\x3d"+a,c=0;c<b;c++)g+="\x26args[]\x3d"+encodeURIComponent(arguments[c+1]);b=Error(g+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings.");b.name="Invariant Violation";b.framesToPop=1;throw b;}
+var x={children:!0,dangerouslySetInnerHTML:!0,defaultValue:!0,defaultChecked:!0,innerHTML:!0,suppressContentEditableWarning:!0,suppressHydrationWarning:!0,style:!0};function z(a,b){return(a&b)===b}
+var B={MUST_USE_PROPERTY:1,HAS_BOOLEAN_VALUE:4,HAS_NUMERIC_VALUE:8,HAS_POSITIVE_NUMERIC_VALUE:24,HAS_OVERLOADED_BOOLEAN_VALUE:32,HAS_STRING_BOOLEAN_VALUE:64,injectDOMPropertyConfig:function(a){var b=B,g=a.Properties||{},c=a.DOMAttributeNamespaces||{},k=a.DOMAttributeNames||{};a=a.DOMMutationMethods||{};for(var f in g){C.hasOwnProperty(f)?w("48",f):void 0;var e=f.toLowerCase(),d=g[f];e={attributeName:e,attributeNamespace:null,propertyName:f,mutationMethod:null,mustUseProperty:z(d,b.MUST_USE_PROPERTY),
+hasBooleanValue:z(d,b.HAS_BOOLEAN_VALUE),hasNumericValue:z(d,b.HAS_NUMERIC_VALUE),hasPositiveNumericValue:z(d,b.HAS_POSITIVE_NUMERIC_VALUE),hasOverloadedBooleanValue:z(d,b.HAS_OVERLOADED_BOOLEAN_VALUE),hasStringBooleanValue:z(d,b.HAS_STRING_BOOLEAN_VALUE)};1>=e.hasBooleanValue+e.hasNumericValue+e.hasOverloadedBooleanValue?void 0:w("50",f);k.hasOwnProperty(f)&&(e.attributeName=k[f]);c.hasOwnProperty(f)&&(e.attributeNamespace=c[f]);a.hasOwnProperty(f)&&(e.mutationMethod=a[f]);C[f]=e}}},C={};
+function da(a,b){if(x.hasOwnProperty(a)||2<a.length&&("o"===a[0]||"O"===a[0])&&("n"===a[1]||"N"===a[1]))return!1;if(null===b)return!0;switch(typeof b){case "boolean":return D(a);case "undefined":case "number":case "string":case "object":return!0;default:return!1}}function E(a){return C.hasOwnProperty(a)?C[a]:null}
+function D(a){if(x.hasOwnProperty(a))return!0;var b=E(a);if(b)return b.hasBooleanValue||b.hasStringBooleanValue||b.hasOverloadedBooleanValue;a=a.toLowerCase().slice(0,5);return"data-"===a||"aria-"===a}
+var F=B,G=F.MUST_USE_PROPERTY,H=F.HAS_BOOLEAN_VALUE,I=F.HAS_NUMERIC_VALUE,J=F.HAS_POSITIVE_NUMERIC_VALUE,K=F.HAS_OVERLOADED_BOOLEAN_VALUE,L=F.HAS_STRING_BOOLEAN_VALUE,ea={Properties:{allowFullScreen:H,async:H,autoFocus:H,autoPlay:H,capture:K,checked:G|H,cols:J,contentEditable:L,controls:H,"default":H,defer:H,disabled:H,download:K,draggable:L,formNoValidate:H,hidden:H,loop:H,multiple:G|H,muted:G|H,noValidate:H,open:H,playsInline:H,readOnly:H,required:H,reversed:H,rows:J,rowSpan:I,scoped:H,seamless:H,
+selected:G|H,size:J,start:I,span:J,spellCheck:L,style:0,tabIndex:0,itemScope:H,acceptCharset:0,className:0,htmlFor:0,httpEquiv:0,value:L},DOMAttributeNames:{acceptCharset:"accept-charset",className:"class",htmlFor:"for",httpEquiv:"http-equiv"},DOMMutationMethods:{value:function(a,b){if(null==b)return a.removeAttribute("value");"number"!==a.type||!1===a.hasAttribute("value")?a.setAttribute("value",""+b):a.validity&&!a.validity.badInput&&a.ownerDocument.activeElement!==a&&a.setAttribute("value",""+
+b)}}},M=F.HAS_STRING_BOOLEAN_VALUE,N={xlink:"http://www.w3.org/1999/xlink",xml:"http://www.w3.org/XML/1998/namespace"},O={Properties:{autoReverse:M,externalResourcesRequired:M,preserveAlpha:M},DOMAttributeNames:{autoReverse:"autoReverse",externalResourcesRequired:"externalResourcesRequired",preserveAlpha:"preserveAlpha"},DOMAttributeNamespaces:{xlinkActuate:N.xlink,xlinkArcrole:N.xlink,xlinkHref:N.xlink,xlinkRole:N.xlink,xlinkShow:N.xlink,xlinkTitle:N.xlink,xlinkType:N.xlink,xmlBase:N.xml,xmlLang:N.xml,
+xmlSpace:N.xml}},fa=/[\-\:]([a-z])/g;function ha(a){return a[1].toUpperCase()}
+"accent-height alignment-baseline arabic-form baseline-shift cap-height clip-path clip-rule color-interpolation color-interpolation-filters color-profile color-rendering dominant-baseline enable-background fill-opacity fill-rule flood-color flood-opacity font-family font-size font-size-adjust font-stretch font-style font-variant font-weight glyph-name glyph-orientation-horizontal glyph-orientation-vertical horiz-adv-x horiz-origin-x image-rendering letter-spacing lighting-color marker-end marker-mid marker-start overline-position overline-thickness paint-order panose-1 pointer-events rendering-intent shape-rendering stop-color stop-opacity strikethrough-position strikethrough-thickness stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width text-anchor text-decoration text-rendering underline-position underline-thickness unicode-bidi unicode-range units-per-em v-alphabetic v-hanging v-ideographic v-mathematical vector-effect vert-adv-y vert-origin-x vert-origin-y word-spacing writing-mode x-height xlink:actuate xlink:arcrole xlink:href xlink:role xlink:show xlink:title xlink:type xml:base xmlns:xlink xml:lang xml:space".split(" ").forEach(function(a){var b=a.replace(fa,
+ha);O.Properties[b]=0;O.DOMAttributeNames[b]=a});F.injectDOMPropertyConfig(ea);F.injectDOMPropertyConfig(O);var P="function"===typeof Symbol&&Symbol["for"]?Symbol["for"]("react.fragment"):60107,ia=/["'&<>]/;
+function Q(a){if("boolean"===typeof a||"number"===typeof a)return""+a;a=""+a;var b=ia.exec(a);if(b){var g="",c,k=0;for(c=b.index;c<a.length;c++){switch(a.charCodeAt(c)){case 34:b="\x26quot;";break;case 38:b="\x26amp;";break;case 39:b="\x26#x27;";break;case 60:b="\x26lt;";break;case 62:b="\x26gt;";break;default:continue}k!==c&&(g+=a.substring(k,c));k=c+1;g+=b}a=k!==c?g+a.substring(k,c):g}return a}
+var ja=/^[:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD][:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\-.0-9\u00B7\u0300-\u036F\u203F-\u2040]*$/,R={},S={};function ka(a){if(S.hasOwnProperty(a))return!0;if(R.hasOwnProperty(a))return!1;if(ja.test(a))return S[a]=!0;R[a]=!0;return!1}
+function la(a,b){var g=E(a);if(g){if(null==b||g.hasBooleanValue&&!b||g.hasNumericValue&&isNaN(b)||g.hasPositiveNumericValue&&1>b||g.hasOverloadedBooleanValue&&!1===b)return"";var c=g.attributeName;if(g.hasBooleanValue||g.hasOverloadedBooleanValue&&!0===b)return c+'\x3d""';if("boolean"!==typeof b||D(a))return c+"\x3d"+('"'+Q(b)+'"')}else if(da(a,b))return null==b?"":a+"\x3d"+('"'+Q(b)+'"');return null}var T={html:"http://www.w3.org/1999/xhtml",mathml:"http://www.w3.org/1998/Math/MathML",svg:"http://www.w3.org/2000/svg"};
+function U(a){switch(a){case "svg":return"http://www.w3.org/2000/svg";case "math":return"http://www.w3.org/1998/Math/MathML";default:return"http://www.w3.org/1999/xhtml"}}
+var V={area:!0,base:!0,br:!0,col:!0,embed:!0,hr:!0,img:!0,input:!0,keygen:!0,link:!0,meta:!0,param:!0,source:!0,track:!0,wbr:!0},ma=h({menuitem:!0},V),W={animationIterationCount:!0,borderImageOutset:!0,borderImageSlice:!0,borderImageWidth:!0,boxFlex:!0,boxFlexGroup:!0,boxOrdinalGroup:!0,columnCount:!0,columns:!0,flex:!0,flexGrow:!0,flexPositive:!0,flexShrink:!0,flexNegative:!0,flexOrder:!0,gridRow:!0,gridRowEnd:!0,gridRowSpan:!0,gridRowStart:!0,gridColumn:!0,gridColumnEnd:!0,gridColumnSpan:!0,gridColumnStart:!0,
+fontWeight:!0,lineClamp:!0,lineHeight:!0,opacity:!0,order:!0,orphans:!0,tabSize:!0,widows:!0,zIndex:!0,zoom:!0,fillOpacity:!0,floodOpacity:!0,stopOpacity:!0,strokeDasharray:!0,strokeDashoffset:!0,strokeMiterlimit:!0,strokeOpacity:!0,strokeWidth:!0},na=["Webkit","ms","Moz","O"];Object.keys(W).forEach(function(a){na.forEach(function(b){b=b+a.charAt(0).toUpperCase()+a.substring(1);W[b]=W[a]})});var X=n.Children.toArray,Y=aa.thatReturns(""),oa={listing:!0,pre:!0,textarea:!0};
+function pa(a){return"string"===typeof a?a:"function"===typeof a?a.displayName||a.name:null}var qa=/^[a-zA-Z][a-zA-Z:_\.\-\d]*$/,ra={},sa=ca(function(a){return ba(a)});function ta(a){var b="";n.Children.forEach(a,function(a){null==a||"string"!==typeof a&&"number"!==typeof a||(b+=a)});return b}function ua(a,b){if(a=a.contextTypes){var g={},c;for(c in a)g[c]=b[c];b=g}else b=t;return b}var va={children:null,dangerouslySetInnerHTML:null,suppressContentEditableWarning:null,suppressHydrationWarning:null};
+function wa(a,b){void 0===a&&w("152",pa(b)||"Component")}
+function xa(a,b){for(;n.isValidElement(a);){var g=a,c=g.type;if("function"!==typeof c)break;a=ua(c,b);var k=[],f=!1,e={isMounted:function(){return!1},enqueueForceUpdate:function(){if(null===k)return null},enqueueReplaceState:function(a,b){f=!0;k=[b]},enqueueSetState:function(a,b){if(null===k)return null;k.push(b)}};if(c.prototype&&c.prototype.isReactComponent)var d=new c(g.props,a,e);else if(d=c(g.props,a,e),null==d||null==d.render){a=d;wa(a,c);continue}d.props=g.props;d.context=a;d.updater=e;e=d.state;
+void 0===e&&(d.state=e=null);if(d.componentWillMount)if(d.componentWillMount(),k.length){e=k;var p=f;k=null;f=!1;if(p&&1===e.length)d.state=e[0];else{var q=p?e[0]:d.state,l=!0;for(p=p?1:0;p<e.length;p++){var m=e[p];if(m="function"===typeof m?m.call(d,q,g.props,a):m)l?(l=!1,q=h({},q,m)):h(q,m)}d.state=q}}else k=null;a=d.render();wa(a,c);if("function"===typeof d.getChildContext&&(g=c.childContextTypes,"object"===typeof g)){var A=d.getChildContext();for(var y in A)y in g?void 0:w("108",pa(c)||"Unknown",
+y)}A&&(b=h({},b,A))}return{child:a,context:b}}
+var ya=function(){function a(b,g){if(!(this instanceof a))throw new TypeError("Cannot call a class as a function");n.isValidElement(b)?b.type!==P?b=[b]:(b=b.props.children,b=n.isValidElement(b)?[b]:X(b)):b=X(b);this.stack=[{domNamespace:T.html,children:b,childIndex:0,context:t,footer:""}];this.exhausted=!1;this.currentSelectValue=null;this.previousWasTextNode=!1;this.makeStaticMarkup=g}a.prototype.read=function(a){if(this.exhausted)return null;for(var b="";b.length<a;){if(0===this.stack.length){this.exhausted=
+!0;break}var c=this.stack[this.stack.length-1];if(c.childIndex>=c.children.length){var k=c.footer;b+=k;""!==k&&(this.previousWasTextNode=!1);this.stack.pop();"select"===c.tag&&(this.currentSelectValue=null)}else k=c.children[c.childIndex++],b+=this.render(k,c.context,c.domNamespace)}return b};a.prototype.render=function(a,g,c){if("string"===typeof a||"number"===typeof a){c=""+a;if(""===c)return"";if(this.makeStaticMarkup)return Q(c);if(this.previousWasTextNode)return"\x3c!-- --\x3e"+Q(c);this.previousWasTextNode=
+!0;return Q(c)}g=xa(a,g);a=g.child;g=g.context;if(null===a||!1===a)return"";if(n.isValidElement(a))return a.type===P?(a=X(a.props.children),this.stack.push({domNamespace:c,children:a,childIndex:0,context:g,footer:""}),""):this.renderDOM(a,g,c);a=X(a);this.stack.push({domNamespace:c,children:a,childIndex:0,context:g,footer:""});return""};a.prototype.renderDOM=function(a,g,c){var b=a.type.toLowerCase();c===T.html&&U(b);ra.hasOwnProperty(b)||(qa.test(b)?void 0:w("65",b),ra[b]=!0);var f=a.props;if("input"===
+b)f=h({type:void 0},f,{defaultChecked:void 0,defaultValue:void 0,value:null!=f.value?f.value:f.defaultValue,checked:null!=f.checked?f.checked:f.defaultChecked});else if("textarea"===b){var e=f.value;if(null==e){e=f.defaultValue;var d=f.children;null!=d&&(null!=e?w("92"):void 0,Array.isArray(d)&&(1>=d.length?void 0:w("93"),d=d[0]),e=""+d);null==e&&(e="")}f=h({},f,{value:void 0,children:""+e})}else if("select"===b)this.currentSelectValue=null!=f.value?f.value:f.defaultValue,f=h({},f,{value:void 0});
+else if("option"===b){d=this.currentSelectValue;var p=ta(f.children);if(null!=d){var q=null!=f.value?f.value+"":p;e=!1;if(Array.isArray(d))for(var l=0;l<d.length;l++){if(""+d[l]===q){e=!0;break}}else e=""+d===q;f=h({selected:void 0,children:void 0},f,{selected:e,children:p})}}if(e=f)ma[b]&&(null!=e.children||null!=e.dangerouslySetInnerHTML?w("137",b,Y()):void 0),null!=e.dangerouslySetInnerHTML&&(null!=e.children?w("60"):void 0,"object"===typeof e.dangerouslySetInnerHTML&&"__html"in e.dangerouslySetInnerHTML?
+void 0:w("61")),null!=e.style&&"object"!==typeof e.style?w("62",Y()):void 0;e=f;d=this.makeStaticMarkup;p=1===this.stack.length;q="\x3c"+a.type;for(r in e)if(e.hasOwnProperty(r)){var m=e[r];if(null!=m){if("style"===r){l=void 0;var A="",y="";for(l in m)if(m.hasOwnProperty(l)){var u=0===l.indexOf("--"),v=m[l];null!=v&&(A+=y+sa(l)+":",y=l,u=null==v||"boolean"===typeof v||""===v?"":u||"number"!==typeof v||0===v||W.hasOwnProperty(y)&&W[y]?(""+v).trim():v+"px",A+=u,y=";")}m=A||null}l=null;b:if(u=b,v=e,
+-1===u.indexOf("-"))u="string"===typeof v.is;else switch(u){case "annotation-xml":case "color-profile":case "font-face":case "font-face-src":case "font-face-uri":case "font-face-format":case "font-face-name":case "missing-glyph":u=!1;break b;default:u=!0}u?va.hasOwnProperty(r)||(l=r,l=ka(l)&&null!=m?l+"\x3d"+('"'+Q(m)+'"'):""):l=la(r,m);l&&(q+=" "+l)}}d||p&&(q+=' data-reactroot\x3d""');var r=q;e="";V.hasOwnProperty(b)?r+="/\x3e":(r+="\x3e",e="\x3c/"+a.type+"\x3e");a:{d=f.dangerouslySetInnerHTML;if(null!=
+d){if(null!=d.__html){d=d.__html;break a}}else if(d=f.children,"string"===typeof d||"number"===typeof d){d=Q(d);break a}d=null}null!=d?(f=[],oa[b]&&"\n"===d.charAt(0)&&(r+="\n"),r+=d):f=X(f.children);a=a.type;c=null==c||"http://www.w3.org/1999/xhtml"===c?U(a):"http://www.w3.org/2000/svg"===c&&"foreignObject"===a?"http://www.w3.org/1999/xhtml":c;this.stack.push({domNamespace:c,tag:b,children:f,childIndex:0,context:g,footer:e});this.previousWasTextNode=!1;return r};return a}(),za={renderToString:function(a){return(new ya(a,
+!1)).read(Infinity)},renderToStaticMarkup:function(a){return(new ya(a,!0)).read(Infinity)},renderToNodeStream:function(){w("207")},renderToStaticNodeStream:function(){w("208")},version:"16.2.0"},Aa=Object.freeze({default:za}),Z=Aa&&za||Aa;module.exports=Z["default"]?Z["default"]:Z;
+
+
+/***/ }),
+/* 435 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/** @license React v16.2.0
+ * react-dom-server.browser.development.js
+ *
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+
+
+
+
+if (process.env.NODE_ENV !== "production") {
+  (function() {
+'use strict';
+
+var invariant = __webpack_require__(32);
+var _assign = __webpack_require__(25);
+var React = __webpack_require__(0);
+var emptyFunction = __webpack_require__(19);
+var emptyObject = __webpack_require__(31);
+var hyphenateStyleName = __webpack_require__(68);
+var memoizeStringOnly = __webpack_require__(181);
+var warning = __webpack_require__(41);
+var checkPropTypes = __webpack_require__(51);
+var camelizeStyleName = __webpack_require__(112);
+
+/**
+ * WARNING: DO NOT manually require this module.
+ * This is a replacement for `invariant(...)` used by the error code system
+ * and will _only_ be required by the corresponding babel pass.
+ * It always throws.
+ */
+
+// These attributes should be all lowercase to allow for
+// case insensitive checks
+var RESERVED_PROPS = {
+  children: true,
+  dangerouslySetInnerHTML: true,
+  defaultValue: true,
+  defaultChecked: true,
+  innerHTML: true,
+  suppressContentEditableWarning: true,
+  suppressHydrationWarning: true,
+  style: true
+};
+
+function checkMask(value, bitmask) {
+  return (value & bitmask) === bitmask;
+}
+
+var DOMPropertyInjection = {
+  /**
+   * Mapping from normalized, camelcased property names to a configuration that
+   * specifies how the associated DOM property should be accessed or rendered.
+   */
+  MUST_USE_PROPERTY: 0x1,
+  HAS_BOOLEAN_VALUE: 0x4,
+  HAS_NUMERIC_VALUE: 0x8,
+  HAS_POSITIVE_NUMERIC_VALUE: 0x10 | 0x8,
+  HAS_OVERLOADED_BOOLEAN_VALUE: 0x20,
+  HAS_STRING_BOOLEAN_VALUE: 0x40,
+
+  /**
+   * Inject some specialized knowledge about the DOM. This takes a config object
+   * with the following properties:
+   *
+   * Properties: object mapping DOM property name to one of the
+   * DOMPropertyInjection constants or null. If your attribute isn't in here,
+   * it won't get written to the DOM.
+   *
+   * DOMAttributeNames: object mapping React attribute name to the DOM
+   * attribute name. Attribute names not specified use the **lowercase**
+   * normalized name.
+   *
+   * DOMAttributeNamespaces: object mapping React attribute name to the DOM
+   * attribute namespace URL. (Attribute names not specified use no namespace.)
+   *
+   * DOMPropertyNames: similar to DOMAttributeNames but for DOM properties.
+   * Property names not specified use the normalized name.
+   *
+   * DOMMutationMethods: Properties that require special mutation methods. If
+   * `value` is undefined, the mutation method should unset the property.
+   *
+   * @param {object} domPropertyConfig the config as described above.
+   */
+  injectDOMPropertyConfig: function (domPropertyConfig) {
+    var Injection = DOMPropertyInjection;
+    var Properties = domPropertyConfig.Properties || {};
+    var DOMAttributeNamespaces = domPropertyConfig.DOMAttributeNamespaces || {};
+    var DOMAttributeNames = domPropertyConfig.DOMAttributeNames || {};
+    var DOMMutationMethods = domPropertyConfig.DOMMutationMethods || {};
+
+    for (var propName in Properties) {
+      !!properties.hasOwnProperty(propName) ? invariant(false, "injectDOMPropertyConfig(...): You're trying to inject DOM property '%s' which has already been injected. You may be accidentally injecting the same DOM property config twice, or you may be injecting two configs that have conflicting property names.", propName) : void 0;
+
+      var lowerCased = propName.toLowerCase();
+      var propConfig = Properties[propName];
+
+      var propertyInfo = {
+        attributeName: lowerCased,
+        attributeNamespace: null,
+        propertyName: propName,
+        mutationMethod: null,
+
+        mustUseProperty: checkMask(propConfig, Injection.MUST_USE_PROPERTY),
+        hasBooleanValue: checkMask(propConfig, Injection.HAS_BOOLEAN_VALUE),
+        hasNumericValue: checkMask(propConfig, Injection.HAS_NUMERIC_VALUE),
+        hasPositiveNumericValue: checkMask(propConfig, Injection.HAS_POSITIVE_NUMERIC_VALUE),
+        hasOverloadedBooleanValue: checkMask(propConfig, Injection.HAS_OVERLOADED_BOOLEAN_VALUE),
+        hasStringBooleanValue: checkMask(propConfig, Injection.HAS_STRING_BOOLEAN_VALUE)
+      };
+      !(propertyInfo.hasBooleanValue + propertyInfo.hasNumericValue + propertyInfo.hasOverloadedBooleanValue <= 1) ? invariant(false, "DOMProperty: Value can be one of boolean, overloaded boolean, or numeric value, but not a combination: %s", propName) : void 0;
+
+      if (DOMAttributeNames.hasOwnProperty(propName)) {
+        var attributeName = DOMAttributeNames[propName];
+
+        propertyInfo.attributeName = attributeName;
+      }
+
+      if (DOMAttributeNamespaces.hasOwnProperty(propName)) {
+        propertyInfo.attributeNamespace = DOMAttributeNamespaces[propName];
+      }
+
+      if (DOMMutationMethods.hasOwnProperty(propName)) {
+        propertyInfo.mutationMethod = DOMMutationMethods[propName];
+      }
+
+      // Downcase references to whitelist properties to check for membership
+      // without case-sensitivity. This allows the whitelist to pick up
+      // `allowfullscreen`, which should be written using the property configuration
+      // for `allowFullscreen`
+      properties[propName] = propertyInfo;
+    }
+  }
+};
+
+/* eslint-disable max-len */
+var ATTRIBUTE_NAME_START_CHAR = ":A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
+/* eslint-enable max-len */
+var ATTRIBUTE_NAME_CHAR = ATTRIBUTE_NAME_START_CHAR + "\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
+
+
+var ROOT_ATTRIBUTE_NAME = 'data-reactroot';
+
+/**
+ * Map from property "standard name" to an object with info about how to set
+ * the property in the DOM. Each object contains:
+ *
+ * attributeName:
+ *   Used when rendering markup or with `*Attribute()`.
+ * attributeNamespace
+ * propertyName:
+ *   Used on DOM node instances. (This includes properties that mutate due to
+ *   external factors.)
+ * mutationMethod:
+ *   If non-null, used instead of the property or `setAttribute()` after
+ *   initial render.
+ * mustUseProperty:
+ *   Whether the property must be accessed and mutated as an object property.
+ * hasBooleanValue:
+ *   Whether the property should be removed when set to a falsey value.
+ * hasNumericValue:
+ *   Whether the property must be numeric or parse as a numeric and should be
+ *   removed when set to a falsey value.
+ * hasPositiveNumericValue:
+ *   Whether the property must be positive numeric or parse as a positive
+ *   numeric and should be removed when set to a falsey value.
+ * hasOverloadedBooleanValue:
+ *   Whether the property can be used as a flag as well as with a value.
+ *   Removed when strictly equal to false; present without a value when
+ *   strictly equal to true; present with a value otherwise.
+ */
+var properties = {};
+
+/**
+ * Checks whether a property name is a writeable attribute.
+ * @method
+ */
+function shouldSetAttribute(name, value) {
+  if (isReservedProp(name)) {
+    return false;
+  }
+  if (name.length > 2 && (name[0] === 'o' || name[0] === 'O') && (name[1] === 'n' || name[1] === 'N')) {
+    return false;
+  }
+  if (value === null) {
+    return true;
+  }
+  switch (typeof value) {
+    case 'boolean':
+      return shouldAttributeAcceptBooleanValue(name);
+    case 'undefined':
+    case 'number':
+    case 'string':
+    case 'object':
+      return true;
+    default:
+      // function, symbol
+      return false;
+  }
+}
+
+function getPropertyInfo(name) {
+  return properties.hasOwnProperty(name) ? properties[name] : null;
+}
+
+function shouldAttributeAcceptBooleanValue(name) {
+  if (isReservedProp(name)) {
+    return true;
+  }
+  var propertyInfo = getPropertyInfo(name);
+  if (propertyInfo) {
+    return propertyInfo.hasBooleanValue || propertyInfo.hasStringBooleanValue || propertyInfo.hasOverloadedBooleanValue;
+  }
+  var prefix = name.toLowerCase().slice(0, 5);
+  return prefix === 'data-' || prefix === 'aria-';
+}
+
+/**
+ * Checks to see if a property name is within the list of properties
+ * reserved for internal React operations. These properties should
+ * not be set on an HTML element.
+ *
+ * @private
+ * @param {string} name
+ * @return {boolean} If the name is within reserved props
+ */
+function isReservedProp(name) {
+  return RESERVED_PROPS.hasOwnProperty(name);
+}
+
+var injection = DOMPropertyInjection;
+
+var MUST_USE_PROPERTY = injection.MUST_USE_PROPERTY;
+var HAS_BOOLEAN_VALUE = injection.HAS_BOOLEAN_VALUE;
+var HAS_NUMERIC_VALUE = injection.HAS_NUMERIC_VALUE;
+var HAS_POSITIVE_NUMERIC_VALUE = injection.HAS_POSITIVE_NUMERIC_VALUE;
+var HAS_OVERLOADED_BOOLEAN_VALUE = injection.HAS_OVERLOADED_BOOLEAN_VALUE;
+var HAS_STRING_BOOLEAN_VALUE = injection.HAS_STRING_BOOLEAN_VALUE;
+
+var HTMLDOMPropertyConfig = {
+  // When adding attributes to this list, be sure to also add them to
+  // the `possibleStandardNames` module to ensure casing and incorrect
+  // name warnings.
+  Properties: {
+    allowFullScreen: HAS_BOOLEAN_VALUE,
+    // specifies target context for links with `preload` type
+    async: HAS_BOOLEAN_VALUE,
+    // Note: there is a special case that prevents it from being written to the DOM
+    // on the client side because the browsers are inconsistent. Instead we call focus().
+    autoFocus: HAS_BOOLEAN_VALUE,
+    autoPlay: HAS_BOOLEAN_VALUE,
+    capture: HAS_OVERLOADED_BOOLEAN_VALUE,
+    checked: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+    cols: HAS_POSITIVE_NUMERIC_VALUE,
+    contentEditable: HAS_STRING_BOOLEAN_VALUE,
+    controls: HAS_BOOLEAN_VALUE,
+    'default': HAS_BOOLEAN_VALUE,
+    defer: HAS_BOOLEAN_VALUE,
+    disabled: HAS_BOOLEAN_VALUE,
+    download: HAS_OVERLOADED_BOOLEAN_VALUE,
+    draggable: HAS_STRING_BOOLEAN_VALUE,
+    formNoValidate: HAS_BOOLEAN_VALUE,
+    hidden: HAS_BOOLEAN_VALUE,
+    loop: HAS_BOOLEAN_VALUE,
+    // Caution; `option.selected` is not updated if `select.multiple` is
+    // disabled with `removeAttribute`.
+    multiple: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+    muted: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+    noValidate: HAS_BOOLEAN_VALUE,
+    open: HAS_BOOLEAN_VALUE,
+    playsInline: HAS_BOOLEAN_VALUE,
+    readOnly: HAS_BOOLEAN_VALUE,
+    required: HAS_BOOLEAN_VALUE,
+    reversed: HAS_BOOLEAN_VALUE,
+    rows: HAS_POSITIVE_NUMERIC_VALUE,
+    rowSpan: HAS_NUMERIC_VALUE,
+    scoped: HAS_BOOLEAN_VALUE,
+    seamless: HAS_BOOLEAN_VALUE,
+    selected: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+    size: HAS_POSITIVE_NUMERIC_VALUE,
+    start: HAS_NUMERIC_VALUE,
+    // support for projecting regular DOM Elements via V1 named slots ( shadow dom )
+    span: HAS_POSITIVE_NUMERIC_VALUE,
+    spellCheck: HAS_STRING_BOOLEAN_VALUE,
+    // Style must be explicitly set in the attribute list. React components
+    // expect a style object
+    style: 0,
+    // Keep it in the whitelist because it is case-sensitive for SVG.
+    tabIndex: 0,
+    // itemScope is for for Microdata support.
+    // See http://schema.org/docs/gs.html
+    itemScope: HAS_BOOLEAN_VALUE,
+    // These attributes must stay in the white-list because they have
+    // different attribute names (see DOMAttributeNames below)
+    acceptCharset: 0,
+    className: 0,
+    htmlFor: 0,
+    httpEquiv: 0,
+    // Attributes with mutation methods must be specified in the whitelist
+    // Set the string boolean flag to allow the behavior
+    value: HAS_STRING_BOOLEAN_VALUE
+  },
+  DOMAttributeNames: {
+    acceptCharset: 'accept-charset',
+    className: 'class',
+    htmlFor: 'for',
+    httpEquiv: 'http-equiv'
+  },
+  DOMMutationMethods: {
+    value: function (node, value) {
+      if (value == null) {
+        return node.removeAttribute('value');
+      }
+
+      // Number inputs get special treatment due to some edge cases in
+      // Chrome. Let everything else assign the value attribute as normal.
+      // https://github.com/facebook/react/issues/7253#issuecomment-236074326
+      if (node.type !== 'number' || node.hasAttribute('value') === false) {
+        node.setAttribute('value', '' + value);
+      } else if (node.validity && !node.validity.badInput && node.ownerDocument.activeElement !== node) {
+        // Don't assign an attribute if validation reports bad
+        // input. Chrome will clear the value. Additionally, don't
+        // operate on inputs that have focus, otherwise Chrome might
+        // strip off trailing decimal places and cause the user's
+        // cursor position to jump to the beginning of the input.
+        //
+        // In ReactDOMInput, we have an onBlur event that will trigger
+        // this function again when focus is lost.
+        node.setAttribute('value', '' + value);
+      }
+    }
+  }
+};
+
+var HAS_STRING_BOOLEAN_VALUE$1 = injection.HAS_STRING_BOOLEAN_VALUE;
+
+
+var NS = {
+  xlink: 'http://www.w3.org/1999/xlink',
+  xml: 'http://www.w3.org/XML/1998/namespace'
+};
+
+/**
+ * This is a list of all SVG attributes that need special casing,
+ * namespacing, or boolean value assignment.
+ *
+ * When adding attributes to this list, be sure to also add them to
+ * the `possibleStandardNames` module to ensure casing and incorrect
+ * name warnings.
+ *
+ * SVG Attributes List:
+ * https://www.w3.org/TR/SVG/attindex.html
+ * SMIL Spec:
+ * https://www.w3.org/TR/smil
+ */
+var ATTRS = ['accent-height', 'alignment-baseline', 'arabic-form', 'baseline-shift', 'cap-height', 'clip-path', 'clip-rule', 'color-interpolation', 'color-interpolation-filters', 'color-profile', 'color-rendering', 'dominant-baseline', 'enable-background', 'fill-opacity', 'fill-rule', 'flood-color', 'flood-opacity', 'font-family', 'font-size', 'font-size-adjust', 'font-stretch', 'font-style', 'font-variant', 'font-weight', 'glyph-name', 'glyph-orientation-horizontal', 'glyph-orientation-vertical', 'horiz-adv-x', 'horiz-origin-x', 'image-rendering', 'letter-spacing', 'lighting-color', 'marker-end', 'marker-mid', 'marker-start', 'overline-position', 'overline-thickness', 'paint-order', 'panose-1', 'pointer-events', 'rendering-intent', 'shape-rendering', 'stop-color', 'stop-opacity', 'strikethrough-position', 'strikethrough-thickness', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering', 'underline-position', 'underline-thickness', 'unicode-bidi', 'unicode-range', 'units-per-em', 'v-alphabetic', 'v-hanging', 'v-ideographic', 'v-mathematical', 'vector-effect', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'word-spacing', 'writing-mode', 'x-height', 'xlink:actuate', 'xlink:arcrole', 'xlink:href', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type', 'xml:base', 'xmlns:xlink', 'xml:lang', 'xml:space'];
+
+var SVGDOMPropertyConfig = {
+  Properties: {
+    autoReverse: HAS_STRING_BOOLEAN_VALUE$1,
+    externalResourcesRequired: HAS_STRING_BOOLEAN_VALUE$1,
+    preserveAlpha: HAS_STRING_BOOLEAN_VALUE$1
+  },
+  DOMAttributeNames: {
+    autoReverse: 'autoReverse',
+    externalResourcesRequired: 'externalResourcesRequired',
+    preserveAlpha: 'preserveAlpha'
+  },
+  DOMAttributeNamespaces: {
+    xlinkActuate: NS.xlink,
+    xlinkArcrole: NS.xlink,
+    xlinkHref: NS.xlink,
+    xlinkRole: NS.xlink,
+    xlinkShow: NS.xlink,
+    xlinkTitle: NS.xlink,
+    xlinkType: NS.xlink,
+    xmlBase: NS.xml,
+    xmlLang: NS.xml,
+    xmlSpace: NS.xml
+  }
+};
+
+var CAMELIZE = /[\-\:]([a-z])/g;
+var capitalize = function (token) {
+  return token[1].toUpperCase();
+};
+
+ATTRS.forEach(function (original) {
+  var reactName = original.replace(CAMELIZE, capitalize);
+
+  SVGDOMPropertyConfig.Properties[reactName] = 0;
+  SVGDOMPropertyConfig.DOMAttributeNames[reactName] = original;
+});
+
+injection.injectDOMPropertyConfig(HTMLDOMPropertyConfig);
+injection.injectDOMPropertyConfig(SVGDOMPropertyConfig);
+
+// TODO: this is special because it gets imported during build.
+
+var ReactVersion = '16.2.0';
+
+var describeComponentFrame = function (name, source, ownerName) {
+  return '\n    in ' + (name || 'Unknown') + (source ? ' (at ' + source.fileName.replace(/^.*[\\\/]/, '') + ':' + source.lineNumber + ')' : ownerName ? ' (created by ' + ownerName + ')' : '');
+};
+
+var ReactInternals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+
+var ReactCurrentOwner = ReactInternals.ReactCurrentOwner;
+var ReactDebugCurrentFrame = ReactInternals.ReactDebugCurrentFrame;
+
+// The Symbol used to tag the ReactElement-like types. If there is no native Symbol
+// nor polyfill, then a plain number is used for performance.
+var hasSymbol = typeof Symbol === 'function' && Symbol['for'];
+
+
+
+
+
+var REACT_FRAGMENT_TYPE = hasSymbol ? Symbol['for']('react.fragment') : 0xeacb;
+
+// code copied and modified from escape-html
+/**
+ * Module variables.
+ * @private
+ */
+
+var matchHtmlRegExp = /["'&<>]/;
+
+/**
+ * Escapes special characters and HTML entities in a given html string.
+ *
+ * @param  {string} string HTML string to escape for later insertion
+ * @return {string}
+ * @public
+ */
+
+function escapeHtml(string) {
+  var str = '' + string;
+  var match = matchHtmlRegExp.exec(str);
+
+  if (!match) {
+    return str;
+  }
+
+  var escape;
+  var html = '';
+  var index = 0;
+  var lastIndex = 0;
+
+  for (index = match.index; index < str.length; index++) {
+    switch (str.charCodeAt(index)) {
+      case 34:
+        // "
+        escape = '&quot;';
+        break;
+      case 38:
+        // &
+        escape = '&amp;';
+        break;
+      case 39:
+        // '
+        escape = '&#x27;'; // modified from escape-html; used to be '&#39'
+        break;
+      case 60:
+        // <
+        escape = '&lt;';
+        break;
+      case 62:
+        // >
+        escape = '&gt;';
+        break;
+      default:
+        continue;
+    }
+
+    if (lastIndex !== index) {
+      html += str.substring(lastIndex, index);
+    }
+
+    lastIndex = index + 1;
+    html += escape;
+  }
+
+  return lastIndex !== index ? html + str.substring(lastIndex, index) : html;
+}
+// end code copied and modified from escape-html
+
+/**
+ * Escapes text to prevent scripting attacks.
+ *
+ * @param {*} text Text value to escape.
+ * @return {string} An escaped string.
+ */
+function escapeTextForBrowser(text) {
+  if (typeof text === 'boolean' || typeof text === 'number') {
+    // this shortcircuit helps perf for types that we know will never have
+    // special characters, especially given that this function is used often
+    // for numeric dom ids.
+    return '' + text;
+  }
+  return escapeHtml(text);
+}
+
+/**
+ * Escapes attribute value to prevent scripting attacks.
+ *
+ * @param {*} value Value to escape.
+ * @return {string} An escaped string.
+ */
+function quoteAttributeValueForBrowser(value) {
+  return '"' + escapeTextForBrowser(value) + '"';
+}
+
+// isAttributeNameSafe() is currently duplicated in DOMPropertyOperations.
+// TODO: Find a better place for this.
+var VALID_ATTRIBUTE_NAME_REGEX = new RegExp('^[' + ATTRIBUTE_NAME_START_CHAR + '][' + ATTRIBUTE_NAME_CHAR + ']*$');
+var illegalAttributeNameCache = {};
+var validatedAttributeNameCache = {};
+function isAttributeNameSafe(attributeName) {
+  if (validatedAttributeNameCache.hasOwnProperty(attributeName)) {
+    return true;
+  }
+  if (illegalAttributeNameCache.hasOwnProperty(attributeName)) {
+    return false;
+  }
+  if (VALID_ATTRIBUTE_NAME_REGEX.test(attributeName)) {
+    validatedAttributeNameCache[attributeName] = true;
+    return true;
+  }
+  illegalAttributeNameCache[attributeName] = true;
+  {
+    warning(false, 'Invalid attribute name: `%s`', attributeName);
+  }
+  return false;
+}
+
+// shouldIgnoreValue() is currently duplicated in DOMPropertyOperations.
+// TODO: Find a better place for this.
+function shouldIgnoreValue(propertyInfo, value) {
+  return value == null || propertyInfo.hasBooleanValue && !value || propertyInfo.hasNumericValue && isNaN(value) || propertyInfo.hasPositiveNumericValue && value < 1 || propertyInfo.hasOverloadedBooleanValue && value === false;
+}
+
+/**
+ * Operations for dealing with DOM properties.
+ */
+
+/**
+ * Creates markup for the ID property.
+ *
+ * @param {string} id Unescaped ID.
+ * @return {string} Markup string.
+ */
+
+
+function createMarkupForRoot() {
+  return ROOT_ATTRIBUTE_NAME + '=""';
+}
+
+/**
+ * Creates markup for a property.
+ *
+ * @param {string} name
+ * @param {*} value
+ * @return {?string} Markup string, or null if the property was invalid.
+ */
+function createMarkupForProperty(name, value) {
+  var propertyInfo = getPropertyInfo(name);
+  if (propertyInfo) {
+    if (shouldIgnoreValue(propertyInfo, value)) {
+      return '';
+    }
+    var attributeName = propertyInfo.attributeName;
+    if (propertyInfo.hasBooleanValue || propertyInfo.hasOverloadedBooleanValue && value === true) {
+      return attributeName + '=""';
+    } else if (typeof value !== 'boolean' || shouldAttributeAcceptBooleanValue(name)) {
+      return attributeName + '=' + quoteAttributeValueForBrowser(value);
+    }
+  } else if (shouldSetAttribute(name, value)) {
+    if (value == null) {
+      return '';
+    }
+    return name + '=' + quoteAttributeValueForBrowser(value);
+  }
+  return null;
+}
+
+/**
+ * Creates markup for a custom property.
+ *
+ * @param {string} name
+ * @param {*} value
+ * @return {string} Markup string, or empty string if the property was invalid.
+ */
+function createMarkupForCustomAttribute(name, value) {
+  if (!isAttributeNameSafe(name) || value == null) {
+    return '';
+  }
+  return name + '=' + quoteAttributeValueForBrowser(value);
+}
+
+var HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
+var MATH_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
+var SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
+var Namespaces = {
+  html: HTML_NAMESPACE,
+  mathml: MATH_NAMESPACE,
+  svg: SVG_NAMESPACE
+};
+
+// Assumes there is no parent namespace.
+function getIntrinsicNamespace(type) {
+  switch (type) {
+    case 'svg':
+      return SVG_NAMESPACE;
+    case 'math':
+      return MATH_NAMESPACE;
+    default:
+      return HTML_NAMESPACE;
+  }
+}
+
+function getChildNamespace(parentNamespace, type) {
+  if (parentNamespace == null || parentNamespace === HTML_NAMESPACE) {
+    // No (or default) parent namespace: potential entry point.
+    return getIntrinsicNamespace(type);
+  }
+  if (parentNamespace === SVG_NAMESPACE && type === 'foreignObject') {
+    // We're leaving SVG.
+    return HTML_NAMESPACE;
+  }
+  // By default, pass namespace below.
+  return parentNamespace;
+}
+
+var ReactControlledValuePropTypes = {
+  checkPropTypes: null
+};
+
+{
+  var hasReadOnlyValue = {
+    button: true,
+    checkbox: true,
+    image: true,
+    hidden: true,
+    radio: true,
+    reset: true,
+    submit: true
+  };
+
+  var propTypes = {
+    value: function (props, propName, componentName) {
+      if (!props[propName] || hasReadOnlyValue[props.type] || props.onChange || props.readOnly || props.disabled) {
+        return null;
+      }
+      return new Error('You provided a `value` prop to a form field without an ' + '`onChange` handler. This will render a read-only field. If ' + 'the field should be mutable use `defaultValue`. Otherwise, ' + 'set either `onChange` or `readOnly`.');
+    },
+    checked: function (props, propName, componentName) {
+      if (!props[propName] || props.onChange || props.readOnly || props.disabled) {
+        return null;
+      }
+      return new Error('You provided a `checked` prop to a form field without an ' + '`onChange` handler. This will render a read-only field. If ' + 'the field should be mutable use `defaultChecked`. Otherwise, ' + 'set either `onChange` or `readOnly`.');
+    }
+  };
+
+  /**
+   * Provide a linked `value` attribute for controlled forms. You should not use
+   * this outside of the ReactDOM controlled form components.
+   */
+  ReactControlledValuePropTypes.checkPropTypes = function (tagName, props, getStack) {
+    checkPropTypes(propTypes, props, 'prop', tagName, getStack);
+  };
+}
+
+// For HTML, certain tags should omit their close tag. We keep a whitelist for
+// those special-case tags.
+
+var omittedCloseTags = {
+  area: true,
+  base: true,
+  br: true,
+  col: true,
+  embed: true,
+  hr: true,
+  img: true,
+  input: true,
+  keygen: true,
+  link: true,
+  meta: true,
+  param: true,
+  source: true,
+  track: true,
+  wbr: true
+};
+
+// For HTML, certain tags cannot have children. This has the same purpose as
+// `omittedCloseTags` except that `menuitem` should still have its closing tag.
+
+var voidElementTags = _assign({
+  menuitem: true
+}, omittedCloseTags);
+
+var HTML = '__html';
+
+function assertValidProps(tag, props, getStack) {
+  if (!props) {
+    return;
+  }
+  // Note the use of `==` which checks for null or undefined.
+  if (voidElementTags[tag]) {
+    !(props.children == null && props.dangerouslySetInnerHTML == null) ? invariant(false, '%s is a void element tag and must neither have `children` nor use `dangerouslySetInnerHTML`.%s', tag, getStack()) : void 0;
+  }
+  if (props.dangerouslySetInnerHTML != null) {
+    !(props.children == null) ? invariant(false, 'Can only set one of `children` or `props.dangerouslySetInnerHTML`.') : void 0;
+    !(typeof props.dangerouslySetInnerHTML === 'object' && HTML in props.dangerouslySetInnerHTML) ? invariant(false, '`props.dangerouslySetInnerHTML` must be in the form `{__html: ...}`. Please visit https://fb.me/react-invariant-dangerously-set-inner-html for more information.') : void 0;
+  }
+  {
+    warning(props.suppressContentEditableWarning || !props.contentEditable || props.children == null, 'A component is `contentEditable` and contains `children` managed by ' + 'React. It is now your responsibility to guarantee that none of ' + 'those nodes are unexpectedly modified or duplicated. This is ' + 'probably not intentional.%s', getStack());
+  }
+  !(props.style == null || typeof props.style === 'object') ? invariant(false, 'The `style` prop expects a mapping from style properties to values, not a string. For example, style={{marginRight: spacing + \'em\'}} when using JSX.%s', getStack()) : void 0;
+}
+
+/**
+ * CSS properties which accept numbers but are not in units of "px".
+ */
+var isUnitlessNumber = {
+  animationIterationCount: true,
+  borderImageOutset: true,
+  borderImageSlice: true,
+  borderImageWidth: true,
+  boxFlex: true,
+  boxFlexGroup: true,
+  boxOrdinalGroup: true,
+  columnCount: true,
+  columns: true,
+  flex: true,
+  flexGrow: true,
+  flexPositive: true,
+  flexShrink: true,
+  flexNegative: true,
+  flexOrder: true,
+  gridRow: true,
+  gridRowEnd: true,
+  gridRowSpan: true,
+  gridRowStart: true,
+  gridColumn: true,
+  gridColumnEnd: true,
+  gridColumnSpan: true,
+  gridColumnStart: true,
+  fontWeight: true,
+  lineClamp: true,
+  lineHeight: true,
+  opacity: true,
+  order: true,
+  orphans: true,
+  tabSize: true,
+  widows: true,
+  zIndex: true,
+  zoom: true,
+
+  // SVG-related properties
+  fillOpacity: true,
+  floodOpacity: true,
+  stopOpacity: true,
+  strokeDasharray: true,
+  strokeDashoffset: true,
+  strokeMiterlimit: true,
+  strokeOpacity: true,
+  strokeWidth: true
+};
+
+/**
+ * @param {string} prefix vendor-specific prefix, eg: Webkit
+ * @param {string} key style name, eg: transitionDuration
+ * @return {string} style name prefixed with `prefix`, properly camelCased, eg:
+ * WebkitTransitionDuration
+ */
+function prefixKey(prefix, key) {
+  return prefix + key.charAt(0).toUpperCase() + key.substring(1);
+}
+
+/**
+ * Support style names that may come passed in prefixed by adding permutations
+ * of vendor prefixes.
+ */
+var prefixes = ['Webkit', 'ms', 'Moz', 'O'];
+
+// Using Object.keys here, or else the vanilla for-in loop makes IE8 go into an
+// infinite loop, because it iterates over the newly added props too.
+Object.keys(isUnitlessNumber).forEach(function (prop) {
+  prefixes.forEach(function (prefix) {
+    isUnitlessNumber[prefixKey(prefix, prop)] = isUnitlessNumber[prop];
+  });
+});
+
+/**
+ * Convert a value into the proper css writable value. The style name `name`
+ * should be logical (no hyphens), as specified
+ * in `CSSProperty.isUnitlessNumber`.
+ *
+ * @param {string} name CSS property name such as `topMargin`.
+ * @param {*} value CSS property value such as `10px`.
+ * @return {string} Normalized style value with dimensions applied.
+ */
+function dangerousStyleValue(name, value, isCustomProperty) {
+  // Note that we've removed escapeTextForBrowser() calls here since the
+  // whole string will be escaped when the attribute is injected into
+  // the markup. If you provide unsafe user data here they can inject
+  // arbitrary CSS which may be problematic (I couldn't repro this):
+  // https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet
+  // http://www.thespanner.co.uk/2007/11/26/ultimate-xss-css-injection/
+  // This is not an XSS hole but instead a potential CSS injection issue
+  // which has lead to a greater discussion about how we're going to
+  // trust URLs moving forward. See #2115901
+
+  var isEmpty = value == null || typeof value === 'boolean' || value === '';
+  if (isEmpty) {
+    return '';
+  }
+
+  if (!isCustomProperty && typeof value === 'number' && value !== 0 && !(isUnitlessNumber.hasOwnProperty(name) && isUnitlessNumber[name])) {
+    return value + 'px'; // Presumes implicit 'px' suffix for unitless numbers
+  }
+
+  return ('' + value).trim();
+}
+
+function isCustomComponent(tagName, props) {
+  if (tagName.indexOf('-') === -1) {
+    return typeof props.is === 'string';
+  }
+  switch (tagName) {
+    // These are reserved SVG and MathML elements.
+    // We don't mind this whitelist too much because we expect it to never grow.
+    // The alternative is to track the namespace in a few places which is convoluted.
+    // https://w3c.github.io/webcomponents/spec/custom/#custom-elements-core-concepts
+    case 'annotation-xml':
+    case 'color-profile':
+    case 'font-face':
+    case 'font-face-src':
+    case 'font-face-uri':
+    case 'font-face-format':
+    case 'font-face-name':
+    case 'missing-glyph':
+      return false;
+    default:
+      return true;
+  }
+}
+
+var warnValidStyle = emptyFunction;
+
+{
+  // 'msTransform' is correct, but the other prefixes should be capitalized
+  var badVendoredStyleNamePattern = /^(?:webkit|moz|o)[A-Z]/;
+
+  // style values shouldn't contain a semicolon
+  var badStyleValueWithSemicolonPattern = /;\s*$/;
+
+  var warnedStyleNames = {};
+  var warnedStyleValues = {};
+  var warnedForNaNValue = false;
+  var warnedForInfinityValue = false;
+
+  var warnHyphenatedStyleName = function (name, getStack) {
+    if (warnedStyleNames.hasOwnProperty(name) && warnedStyleNames[name]) {
+      return;
+    }
+
+    warnedStyleNames[name] = true;
+    warning(false, 'Unsupported style property %s. Did you mean %s?%s', name, camelizeStyleName(name), getStack());
+  };
+
+  var warnBadVendoredStyleName = function (name, getStack) {
+    if (warnedStyleNames.hasOwnProperty(name) && warnedStyleNames[name]) {
+      return;
+    }
+
+    warnedStyleNames[name] = true;
+    warning(false, 'Unsupported vendor-prefixed style property %s. Did you mean %s?%s', name, name.charAt(0).toUpperCase() + name.slice(1), getStack());
+  };
+
+  var warnStyleValueWithSemicolon = function (name, value, getStack) {
+    if (warnedStyleValues.hasOwnProperty(value) && warnedStyleValues[value]) {
+      return;
+    }
+
+    warnedStyleValues[value] = true;
+    warning(false, "Style property values shouldn't contain a semicolon. " + 'Try "%s: %s" instead.%s', name, value.replace(badStyleValueWithSemicolonPattern, ''), getStack());
+  };
+
+  var warnStyleValueIsNaN = function (name, value, getStack) {
+    if (warnedForNaNValue) {
+      return;
+    }
+
+    warnedForNaNValue = true;
+    warning(false, '`NaN` is an invalid value for the `%s` css style property.%s', name, getStack());
+  };
+
+  var warnStyleValueIsInfinity = function (name, value, getStack) {
+    if (warnedForInfinityValue) {
+      return;
+    }
+
+    warnedForInfinityValue = true;
+    warning(false, '`Infinity` is an invalid value for the `%s` css style property.%s', name, getStack());
+  };
+
+  warnValidStyle = function (name, value, getStack) {
+    if (name.indexOf('-') > -1) {
+      warnHyphenatedStyleName(name, getStack);
+    } else if (badVendoredStyleNamePattern.test(name)) {
+      warnBadVendoredStyleName(name, getStack);
+    } else if (badStyleValueWithSemicolonPattern.test(value)) {
+      warnStyleValueWithSemicolon(name, value, getStack);
+    }
+
+    if (typeof value === 'number') {
+      if (isNaN(value)) {
+        warnStyleValueIsNaN(name, value, getStack);
+      } else if (!isFinite(value)) {
+        warnStyleValueIsInfinity(name, value, getStack);
+      }
+    }
+  };
+}
+
+var warnValidStyle$1 = warnValidStyle;
+
+var ariaProperties = {
+  'aria-current': 0, // state
+  'aria-details': 0,
+  'aria-disabled': 0, // state
+  'aria-hidden': 0, // state
+  'aria-invalid': 0, // state
+  'aria-keyshortcuts': 0,
+  'aria-label': 0,
+  'aria-roledescription': 0,
+  // Widget Attributes
+  'aria-autocomplete': 0,
+  'aria-checked': 0,
+  'aria-expanded': 0,
+  'aria-haspopup': 0,
+  'aria-level': 0,
+  'aria-modal': 0,
+  'aria-multiline': 0,
+  'aria-multiselectable': 0,
+  'aria-orientation': 0,
+  'aria-placeholder': 0,
+  'aria-pressed': 0,
+  'aria-readonly': 0,
+  'aria-required': 0,
+  'aria-selected': 0,
+  'aria-sort': 0,
+  'aria-valuemax': 0,
+  'aria-valuemin': 0,
+  'aria-valuenow': 0,
+  'aria-valuetext': 0,
+  // Live Region Attributes
+  'aria-atomic': 0,
+  'aria-busy': 0,
+  'aria-live': 0,
+  'aria-relevant': 0,
+  // Drag-and-Drop Attributes
+  'aria-dropeffect': 0,
+  'aria-grabbed': 0,
+  // Relationship Attributes
+  'aria-activedescendant': 0,
+  'aria-colcount': 0,
+  'aria-colindex': 0,
+  'aria-colspan': 0,
+  'aria-controls': 0,
+  'aria-describedby': 0,
+  'aria-errormessage': 0,
+  'aria-flowto': 0,
+  'aria-labelledby': 0,
+  'aria-owns': 0,
+  'aria-posinset': 0,
+  'aria-rowcount': 0,
+  'aria-rowindex': 0,
+  'aria-rowspan': 0,
+  'aria-setsize': 0
+};
+
+var warnedProperties = {};
+var rARIA = new RegExp('^(aria)-[' + ATTRIBUTE_NAME_CHAR + ']*$');
+var rARIACamel = new RegExp('^(aria)[A-Z][' + ATTRIBUTE_NAME_CHAR + ']*$');
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+function getStackAddendum$1() {
+  var stack = ReactDebugCurrentFrame.getStackAddendum();
+  return stack != null ? stack : '';
+}
+
+function validateProperty(tagName, name) {
+  if (hasOwnProperty.call(warnedProperties, name) && warnedProperties[name]) {
+    return true;
+  }
+
+  if (rARIACamel.test(name)) {
+    var ariaName = 'aria-' + name.slice(4).toLowerCase();
+    var correctName = ariaProperties.hasOwnProperty(ariaName) ? ariaName : null;
+
+    // If this is an aria-* attribute, but is not listed in the known DOM
+    // DOM properties, then it is an invalid aria-* attribute.
+    if (correctName == null) {
+      warning(false, 'Invalid ARIA attribute `%s`. ARIA attributes follow the pattern aria-* and must be lowercase.%s', name, getStackAddendum$1());
+      warnedProperties[name] = true;
+      return true;
+    }
+    // aria-* attributes should be lowercase; suggest the lowercase version.
+    if (name !== correctName) {
+      warning(false, 'Invalid ARIA attribute `%s`. Did you mean `%s`?%s', name, correctName, getStackAddendum$1());
+      warnedProperties[name] = true;
+      return true;
+    }
+  }
+
+  if (rARIA.test(name)) {
+    var lowerCasedName = name.toLowerCase();
+    var standardName = ariaProperties.hasOwnProperty(lowerCasedName) ? lowerCasedName : null;
+
+    // If this is an aria-* attribute, but is not listed in the known DOM
+    // DOM properties, then it is an invalid aria-* attribute.
+    if (standardName == null) {
+      warnedProperties[name] = true;
+      return false;
+    }
+    // aria-* attributes should be lowercase; suggest the lowercase version.
+    if (name !== standardName) {
+      warning(false, 'Unknown ARIA attribute `%s`. Did you mean `%s`?%s', name, standardName, getStackAddendum$1());
+      warnedProperties[name] = true;
+      return true;
+    }
+  }
+
+  return true;
+}
+
+function warnInvalidARIAProps(type, props) {
+  var invalidProps = [];
+
+  for (var key in props) {
+    var isValid = validateProperty(type, key);
+    if (!isValid) {
+      invalidProps.push(key);
+    }
+  }
+
+  var unknownPropString = invalidProps.map(function (prop) {
+    return '`' + prop + '`';
+  }).join(', ');
+
+  if (invalidProps.length === 1) {
+    warning(false, 'Invalid aria prop %s on <%s> tag. ' + 'For details, see https://fb.me/invalid-aria-prop%s', unknownPropString, type, getStackAddendum$1());
+  } else if (invalidProps.length > 1) {
+    warning(false, 'Invalid aria props %s on <%s> tag. ' + 'For details, see https://fb.me/invalid-aria-prop%s', unknownPropString, type, getStackAddendum$1());
+  }
+}
+
+function validateProperties(type, props) {
+  if (isCustomComponent(type, props)) {
+    return;
+  }
+  warnInvalidARIAProps(type, props);
+}
+
+var didWarnValueNull = false;
+
+function getStackAddendum$2() {
+  var stack = ReactDebugCurrentFrame.getStackAddendum();
+  return stack != null ? stack : '';
+}
+
+function validateProperties$1(type, props) {
+  if (type !== 'input' && type !== 'textarea' && type !== 'select') {
+    return;
+  }
+
+  if (props != null && props.value === null && !didWarnValueNull) {
+    didWarnValueNull = true;
+    if (type === 'select' && props.multiple) {
+      warning(false, '`value` prop on `%s` should not be null. ' + 'Consider using an empty array when `multiple` is set to `true` ' + 'to clear the component or `undefined` for uncontrolled components.%s', type, getStackAddendum$2());
+    } else {
+      warning(false, '`value` prop on `%s` should not be null. ' + 'Consider using an empty string to clear the component or `undefined` ' + 'for uncontrolled components.%s', type, getStackAddendum$2());
+    }
+  }
+}
+
+/**
+ * Registers plugins so that they can extract and dispatch events.
+ *
+ * @see {EventPluginHub}
+ */
+
+/**
+ * Ordered list of injected plugins.
+ */
+
+
+/**
+ * Mapping from event name to dispatch config
+ */
+
+
+/**
+ * Mapping from registration name to plugin module
+ */
+var registrationNameModules = {};
+
+/**
+ * Mapping from registration name to event name
+ */
+
+
+/**
+ * Mapping from lowercase registration names to the properly cased version,
+ * used to warn in the case of missing event handlers. Available
+ * only in true.
+ * @type {Object}
+ */
+var possibleRegistrationNames = {};
+// Trust the developer to only use possibleRegistrationNames in true
+
+/**
+ * Injects an ordering of plugins (by plugin name). This allows the ordering
+ * to be decoupled from injection of the actual plugins so that ordering is
+ * always deterministic regardless of packaging, on-the-fly injection, etc.
+ *
+ * @param {array} InjectedEventPluginOrder
+ * @internal
+ * @see {EventPluginHub.injection.injectEventPluginOrder}
+ */
+
+
+/**
+ * Injects plugins to be used by `EventPluginHub`. The plugin names must be
+ * in the ordering injected by `injectEventPluginOrder`.
+ *
+ * Plugins can be injected as part of page initialization or on-the-fly.
+ *
+ * @param {object} injectedNamesToPlugins Map from names to plugin modules.
+ * @internal
+ * @see {EventPluginHub.injection.injectEventPluginsByName}
+ */
+
+// When adding attributes to the HTML or SVG whitelist, be sure to
+// also add them to this module to ensure casing and incorrect name
+// warnings.
+var possibleStandardNames = {
+  // HTML
+  accept: 'accept',
+  acceptcharset: 'acceptCharset',
+  'accept-charset': 'acceptCharset',
+  accesskey: 'accessKey',
+  action: 'action',
+  allowfullscreen: 'allowFullScreen',
+  alt: 'alt',
+  as: 'as',
+  async: 'async',
+  autocapitalize: 'autoCapitalize',
+  autocomplete: 'autoComplete',
+  autocorrect: 'autoCorrect',
+  autofocus: 'autoFocus',
+  autoplay: 'autoPlay',
+  autosave: 'autoSave',
+  capture: 'capture',
+  cellpadding: 'cellPadding',
+  cellspacing: 'cellSpacing',
+  challenge: 'challenge',
+  charset: 'charSet',
+  checked: 'checked',
+  children: 'children',
+  cite: 'cite',
+  'class': 'className',
+  classid: 'classID',
+  classname: 'className',
+  cols: 'cols',
+  colspan: 'colSpan',
+  content: 'content',
+  contenteditable: 'contentEditable',
+  contextmenu: 'contextMenu',
+  controls: 'controls',
+  controlslist: 'controlsList',
+  coords: 'coords',
+  crossorigin: 'crossOrigin',
+  dangerouslysetinnerhtml: 'dangerouslySetInnerHTML',
+  data: 'data',
+  datetime: 'dateTime',
+  'default': 'default',
+  defaultchecked: 'defaultChecked',
+  defaultvalue: 'defaultValue',
+  defer: 'defer',
+  dir: 'dir',
+  disabled: 'disabled',
+  download: 'download',
+  draggable: 'draggable',
+  enctype: 'encType',
+  'for': 'htmlFor',
+  form: 'form',
+  formmethod: 'formMethod',
+  formaction: 'formAction',
+  formenctype: 'formEncType',
+  formnovalidate: 'formNoValidate',
+  formtarget: 'formTarget',
+  frameborder: 'frameBorder',
+  headers: 'headers',
+  height: 'height',
+  hidden: 'hidden',
+  high: 'high',
+  href: 'href',
+  hreflang: 'hrefLang',
+  htmlfor: 'htmlFor',
+  httpequiv: 'httpEquiv',
+  'http-equiv': 'httpEquiv',
+  icon: 'icon',
+  id: 'id',
+  innerhtml: 'innerHTML',
+  inputmode: 'inputMode',
+  integrity: 'integrity',
+  is: 'is',
+  itemid: 'itemID',
+  itemprop: 'itemProp',
+  itemref: 'itemRef',
+  itemscope: 'itemScope',
+  itemtype: 'itemType',
+  keyparams: 'keyParams',
+  keytype: 'keyType',
+  kind: 'kind',
+  label: 'label',
+  lang: 'lang',
+  list: 'list',
+  loop: 'loop',
+  low: 'low',
+  manifest: 'manifest',
+  marginwidth: 'marginWidth',
+  marginheight: 'marginHeight',
+  max: 'max',
+  maxlength: 'maxLength',
+  media: 'media',
+  mediagroup: 'mediaGroup',
+  method: 'method',
+  min: 'min',
+  minlength: 'minLength',
+  multiple: 'multiple',
+  muted: 'muted',
+  name: 'name',
+  nonce: 'nonce',
+  novalidate: 'noValidate',
+  open: 'open',
+  optimum: 'optimum',
+  pattern: 'pattern',
+  placeholder: 'placeholder',
+  playsinline: 'playsInline',
+  poster: 'poster',
+  preload: 'preload',
+  profile: 'profile',
+  radiogroup: 'radioGroup',
+  readonly: 'readOnly',
+  referrerpolicy: 'referrerPolicy',
+  rel: 'rel',
+  required: 'required',
+  reversed: 'reversed',
+  role: 'role',
+  rows: 'rows',
+  rowspan: 'rowSpan',
+  sandbox: 'sandbox',
+  scope: 'scope',
+  scoped: 'scoped',
+  scrolling: 'scrolling',
+  seamless: 'seamless',
+  selected: 'selected',
+  shape: 'shape',
+  size: 'size',
+  sizes: 'sizes',
+  span: 'span',
+  spellcheck: 'spellCheck',
+  src: 'src',
+  srcdoc: 'srcDoc',
+  srclang: 'srcLang',
+  srcset: 'srcSet',
+  start: 'start',
+  step: 'step',
+  style: 'style',
+  summary: 'summary',
+  tabindex: 'tabIndex',
+  target: 'target',
+  title: 'title',
+  type: 'type',
+  usemap: 'useMap',
+  value: 'value',
+  width: 'width',
+  wmode: 'wmode',
+  wrap: 'wrap',
+
+  // SVG
+  about: 'about',
+  accentheight: 'accentHeight',
+  'accent-height': 'accentHeight',
+  accumulate: 'accumulate',
+  additive: 'additive',
+  alignmentbaseline: 'alignmentBaseline',
+  'alignment-baseline': 'alignmentBaseline',
+  allowreorder: 'allowReorder',
+  alphabetic: 'alphabetic',
+  amplitude: 'amplitude',
+  arabicform: 'arabicForm',
+  'arabic-form': 'arabicForm',
+  ascent: 'ascent',
+  attributename: 'attributeName',
+  attributetype: 'attributeType',
+  autoreverse: 'autoReverse',
+  azimuth: 'azimuth',
+  basefrequency: 'baseFrequency',
+  baselineshift: 'baselineShift',
+  'baseline-shift': 'baselineShift',
+  baseprofile: 'baseProfile',
+  bbox: 'bbox',
+  begin: 'begin',
+  bias: 'bias',
+  by: 'by',
+  calcmode: 'calcMode',
+  capheight: 'capHeight',
+  'cap-height': 'capHeight',
+  clip: 'clip',
+  clippath: 'clipPath',
+  'clip-path': 'clipPath',
+  clippathunits: 'clipPathUnits',
+  cliprule: 'clipRule',
+  'clip-rule': 'clipRule',
+  color: 'color',
+  colorinterpolation: 'colorInterpolation',
+  'color-interpolation': 'colorInterpolation',
+  colorinterpolationfilters: 'colorInterpolationFilters',
+  'color-interpolation-filters': 'colorInterpolationFilters',
+  colorprofile: 'colorProfile',
+  'color-profile': 'colorProfile',
+  colorrendering: 'colorRendering',
+  'color-rendering': 'colorRendering',
+  contentscripttype: 'contentScriptType',
+  contentstyletype: 'contentStyleType',
+  cursor: 'cursor',
+  cx: 'cx',
+  cy: 'cy',
+  d: 'd',
+  datatype: 'datatype',
+  decelerate: 'decelerate',
+  descent: 'descent',
+  diffuseconstant: 'diffuseConstant',
+  direction: 'direction',
+  display: 'display',
+  divisor: 'divisor',
+  dominantbaseline: 'dominantBaseline',
+  'dominant-baseline': 'dominantBaseline',
+  dur: 'dur',
+  dx: 'dx',
+  dy: 'dy',
+  edgemode: 'edgeMode',
+  elevation: 'elevation',
+  enablebackground: 'enableBackground',
+  'enable-background': 'enableBackground',
+  end: 'end',
+  exponent: 'exponent',
+  externalresourcesrequired: 'externalResourcesRequired',
+  fill: 'fill',
+  fillopacity: 'fillOpacity',
+  'fill-opacity': 'fillOpacity',
+  fillrule: 'fillRule',
+  'fill-rule': 'fillRule',
+  filter: 'filter',
+  filterres: 'filterRes',
+  filterunits: 'filterUnits',
+  floodopacity: 'floodOpacity',
+  'flood-opacity': 'floodOpacity',
+  floodcolor: 'floodColor',
+  'flood-color': 'floodColor',
+  focusable: 'focusable',
+  fontfamily: 'fontFamily',
+  'font-family': 'fontFamily',
+  fontsize: 'fontSize',
+  'font-size': 'fontSize',
+  fontsizeadjust: 'fontSizeAdjust',
+  'font-size-adjust': 'fontSizeAdjust',
+  fontstretch: 'fontStretch',
+  'font-stretch': 'fontStretch',
+  fontstyle: 'fontStyle',
+  'font-style': 'fontStyle',
+  fontvariant: 'fontVariant',
+  'font-variant': 'fontVariant',
+  fontweight: 'fontWeight',
+  'font-weight': 'fontWeight',
+  format: 'format',
+  from: 'from',
+  fx: 'fx',
+  fy: 'fy',
+  g1: 'g1',
+  g2: 'g2',
+  glyphname: 'glyphName',
+  'glyph-name': 'glyphName',
+  glyphorientationhorizontal: 'glyphOrientationHorizontal',
+  'glyph-orientation-horizontal': 'glyphOrientationHorizontal',
+  glyphorientationvertical: 'glyphOrientationVertical',
+  'glyph-orientation-vertical': 'glyphOrientationVertical',
+  glyphref: 'glyphRef',
+  gradienttransform: 'gradientTransform',
+  gradientunits: 'gradientUnits',
+  hanging: 'hanging',
+  horizadvx: 'horizAdvX',
+  'horiz-adv-x': 'horizAdvX',
+  horizoriginx: 'horizOriginX',
+  'horiz-origin-x': 'horizOriginX',
+  ideographic: 'ideographic',
+  imagerendering: 'imageRendering',
+  'image-rendering': 'imageRendering',
+  in2: 'in2',
+  'in': 'in',
+  inlist: 'inlist',
+  intercept: 'intercept',
+  k1: 'k1',
+  k2: 'k2',
+  k3: 'k3',
+  k4: 'k4',
+  k: 'k',
+  kernelmatrix: 'kernelMatrix',
+  kernelunitlength: 'kernelUnitLength',
+  kerning: 'kerning',
+  keypoints: 'keyPoints',
+  keysplines: 'keySplines',
+  keytimes: 'keyTimes',
+  lengthadjust: 'lengthAdjust',
+  letterspacing: 'letterSpacing',
+  'letter-spacing': 'letterSpacing',
+  lightingcolor: 'lightingColor',
+  'lighting-color': 'lightingColor',
+  limitingconeangle: 'limitingConeAngle',
+  local: 'local',
+  markerend: 'markerEnd',
+  'marker-end': 'markerEnd',
+  markerheight: 'markerHeight',
+  markermid: 'markerMid',
+  'marker-mid': 'markerMid',
+  markerstart: 'markerStart',
+  'marker-start': 'markerStart',
+  markerunits: 'markerUnits',
+  markerwidth: 'markerWidth',
+  mask: 'mask',
+  maskcontentunits: 'maskContentUnits',
+  maskunits: 'maskUnits',
+  mathematical: 'mathematical',
+  mode: 'mode',
+  numoctaves: 'numOctaves',
+  offset: 'offset',
+  opacity: 'opacity',
+  operator: 'operator',
+  order: 'order',
+  orient: 'orient',
+  orientation: 'orientation',
+  origin: 'origin',
+  overflow: 'overflow',
+  overlineposition: 'overlinePosition',
+  'overline-position': 'overlinePosition',
+  overlinethickness: 'overlineThickness',
+  'overline-thickness': 'overlineThickness',
+  paintorder: 'paintOrder',
+  'paint-order': 'paintOrder',
+  panose1: 'panose1',
+  'panose-1': 'panose1',
+  pathlength: 'pathLength',
+  patterncontentunits: 'patternContentUnits',
+  patterntransform: 'patternTransform',
+  patternunits: 'patternUnits',
+  pointerevents: 'pointerEvents',
+  'pointer-events': 'pointerEvents',
+  points: 'points',
+  pointsatx: 'pointsAtX',
+  pointsaty: 'pointsAtY',
+  pointsatz: 'pointsAtZ',
+  prefix: 'prefix',
+  preservealpha: 'preserveAlpha',
+  preserveaspectratio: 'preserveAspectRatio',
+  primitiveunits: 'primitiveUnits',
+  property: 'property',
+  r: 'r',
+  radius: 'radius',
+  refx: 'refX',
+  refy: 'refY',
+  renderingintent: 'renderingIntent',
+  'rendering-intent': 'renderingIntent',
+  repeatcount: 'repeatCount',
+  repeatdur: 'repeatDur',
+  requiredextensions: 'requiredExtensions',
+  requiredfeatures: 'requiredFeatures',
+  resource: 'resource',
+  restart: 'restart',
+  result: 'result',
+  results: 'results',
+  rotate: 'rotate',
+  rx: 'rx',
+  ry: 'ry',
+  scale: 'scale',
+  security: 'security',
+  seed: 'seed',
+  shaperendering: 'shapeRendering',
+  'shape-rendering': 'shapeRendering',
+  slope: 'slope',
+  spacing: 'spacing',
+  specularconstant: 'specularConstant',
+  specularexponent: 'specularExponent',
+  speed: 'speed',
+  spreadmethod: 'spreadMethod',
+  startoffset: 'startOffset',
+  stddeviation: 'stdDeviation',
+  stemh: 'stemh',
+  stemv: 'stemv',
+  stitchtiles: 'stitchTiles',
+  stopcolor: 'stopColor',
+  'stop-color': 'stopColor',
+  stopopacity: 'stopOpacity',
+  'stop-opacity': 'stopOpacity',
+  strikethroughposition: 'strikethroughPosition',
+  'strikethrough-position': 'strikethroughPosition',
+  strikethroughthickness: 'strikethroughThickness',
+  'strikethrough-thickness': 'strikethroughThickness',
+  string: 'string',
+  stroke: 'stroke',
+  strokedasharray: 'strokeDasharray',
+  'stroke-dasharray': 'strokeDasharray',
+  strokedashoffset: 'strokeDashoffset',
+  'stroke-dashoffset': 'strokeDashoffset',
+  strokelinecap: 'strokeLinecap',
+  'stroke-linecap': 'strokeLinecap',
+  strokelinejoin: 'strokeLinejoin',
+  'stroke-linejoin': 'strokeLinejoin',
+  strokemiterlimit: 'strokeMiterlimit',
+  'stroke-miterlimit': 'strokeMiterlimit',
+  strokewidth: 'strokeWidth',
+  'stroke-width': 'strokeWidth',
+  strokeopacity: 'strokeOpacity',
+  'stroke-opacity': 'strokeOpacity',
+  suppresscontenteditablewarning: 'suppressContentEditableWarning',
+  suppresshydrationwarning: 'suppressHydrationWarning',
+  surfacescale: 'surfaceScale',
+  systemlanguage: 'systemLanguage',
+  tablevalues: 'tableValues',
+  targetx: 'targetX',
+  targety: 'targetY',
+  textanchor: 'textAnchor',
+  'text-anchor': 'textAnchor',
+  textdecoration: 'textDecoration',
+  'text-decoration': 'textDecoration',
+  textlength: 'textLength',
+  textrendering: 'textRendering',
+  'text-rendering': 'textRendering',
+  to: 'to',
+  transform: 'transform',
+  'typeof': 'typeof',
+  u1: 'u1',
+  u2: 'u2',
+  underlineposition: 'underlinePosition',
+  'underline-position': 'underlinePosition',
+  underlinethickness: 'underlineThickness',
+  'underline-thickness': 'underlineThickness',
+  unicode: 'unicode',
+  unicodebidi: 'unicodeBidi',
+  'unicode-bidi': 'unicodeBidi',
+  unicoderange: 'unicodeRange',
+  'unicode-range': 'unicodeRange',
+  unitsperem: 'unitsPerEm',
+  'units-per-em': 'unitsPerEm',
+  unselectable: 'unselectable',
+  valphabetic: 'vAlphabetic',
+  'v-alphabetic': 'vAlphabetic',
+  values: 'values',
+  vectoreffect: 'vectorEffect',
+  'vector-effect': 'vectorEffect',
+  version: 'version',
+  vertadvy: 'vertAdvY',
+  'vert-adv-y': 'vertAdvY',
+  vertoriginx: 'vertOriginX',
+  'vert-origin-x': 'vertOriginX',
+  vertoriginy: 'vertOriginY',
+  'vert-origin-y': 'vertOriginY',
+  vhanging: 'vHanging',
+  'v-hanging': 'vHanging',
+  videographic: 'vIdeographic',
+  'v-ideographic': 'vIdeographic',
+  viewbox: 'viewBox',
+  viewtarget: 'viewTarget',
+  visibility: 'visibility',
+  vmathematical: 'vMathematical',
+  'v-mathematical': 'vMathematical',
+  vocab: 'vocab',
+  widths: 'widths',
+  wordspacing: 'wordSpacing',
+  'word-spacing': 'wordSpacing',
+  writingmode: 'writingMode',
+  'writing-mode': 'writingMode',
+  x1: 'x1',
+  x2: 'x2',
+  x: 'x',
+  xchannelselector: 'xChannelSelector',
+  xheight: 'xHeight',
+  'x-height': 'xHeight',
+  xlinkactuate: 'xlinkActuate',
+  'xlink:actuate': 'xlinkActuate',
+  xlinkarcrole: 'xlinkArcrole',
+  'xlink:arcrole': 'xlinkArcrole',
+  xlinkhref: 'xlinkHref',
+  'xlink:href': 'xlinkHref',
+  xlinkrole: 'xlinkRole',
+  'xlink:role': 'xlinkRole',
+  xlinkshow: 'xlinkShow',
+  'xlink:show': 'xlinkShow',
+  xlinktitle: 'xlinkTitle',
+  'xlink:title': 'xlinkTitle',
+  xlinktype: 'xlinkType',
+  'xlink:type': 'xlinkType',
+  xmlbase: 'xmlBase',
+  'xml:base': 'xmlBase',
+  xmllang: 'xmlLang',
+  'xml:lang': 'xmlLang',
+  xmlns: 'xmlns',
+  'xml:space': 'xmlSpace',
+  xmlnsxlink: 'xmlnsXlink',
+  'xmlns:xlink': 'xmlnsXlink',
+  xmlspace: 'xmlSpace',
+  y1: 'y1',
+  y2: 'y2',
+  y: 'y',
+  ychannelselector: 'yChannelSelector',
+  z: 'z',
+  zoomandpan: 'zoomAndPan'
+};
+
+function getStackAddendum$3() {
+  var stack = ReactDebugCurrentFrame.getStackAddendum();
+  return stack != null ? stack : '';
+}
+
+{
+  var warnedProperties$1 = {};
+  var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+  var EVENT_NAME_REGEX = /^on./;
+  var INVALID_EVENT_NAME_REGEX = /^on[^A-Z]/;
+  var rARIA$1 = new RegExp('^(aria)-[' + ATTRIBUTE_NAME_CHAR + ']*$');
+  var rARIACamel$1 = new RegExp('^(aria)[A-Z][' + ATTRIBUTE_NAME_CHAR + ']*$');
+
+  var validateProperty$1 = function (tagName, name, value, canUseEventSystem) {
+    if (hasOwnProperty$1.call(warnedProperties$1, name) && warnedProperties$1[name]) {
+      return true;
+    }
+
+    var lowerCasedName = name.toLowerCase();
+    if (lowerCasedName === 'onfocusin' || lowerCasedName === 'onfocusout') {
+      warning(false, 'React uses onFocus and onBlur instead of onFocusIn and onFocusOut. ' + 'All React events are normalized to bubble, so onFocusIn and onFocusOut ' + 'are not needed/supported by React.');
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    // We can't rely on the event system being injected on the server.
+    if (canUseEventSystem) {
+      if (registrationNameModules.hasOwnProperty(name)) {
+        return true;
+      }
+      var registrationName = possibleRegistrationNames.hasOwnProperty(lowerCasedName) ? possibleRegistrationNames[lowerCasedName] : null;
+      if (registrationName != null) {
+        warning(false, 'Invalid event handler property `%s`. Did you mean `%s`?%s', name, registrationName, getStackAddendum$3());
+        warnedProperties$1[name] = true;
+        return true;
+      }
+      if (EVENT_NAME_REGEX.test(name)) {
+        warning(false, 'Unknown event handler property `%s`. It will be ignored.%s', name, getStackAddendum$3());
+        warnedProperties$1[name] = true;
+        return true;
+      }
+    } else if (EVENT_NAME_REGEX.test(name)) {
+      // If no event plugins have been injected, we are in a server environment.
+      // So we can't tell if the event name is correct for sure, but we can filter
+      // out known bad ones like `onclick`. We can't suggest a specific replacement though.
+      if (INVALID_EVENT_NAME_REGEX.test(name)) {
+        warning(false, 'Invalid event handler property `%s`. ' + 'React events use the camelCase naming convention, for example `onClick`.%s', name, getStackAddendum$3());
+      }
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    // Let the ARIA attribute hook validate ARIA attributes
+    if (rARIA$1.test(name) || rARIACamel$1.test(name)) {
+      return true;
+    }
+
+    if (lowerCasedName === 'innerhtml') {
+      warning(false, 'Directly setting property `innerHTML` is not permitted. ' + 'For more information, lookup documentation on `dangerouslySetInnerHTML`.');
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (lowerCasedName === 'aria') {
+      warning(false, 'The `aria` attribute is reserved for future use in React. ' + 'Pass individual `aria-` attributes instead.');
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (lowerCasedName === 'is' && value !== null && value !== undefined && typeof value !== 'string') {
+      warning(false, 'Received a `%s` for a string attribute `is`. If this is expected, cast ' + 'the value to a string.%s', typeof value, getStackAddendum$3());
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (typeof value === 'number' && isNaN(value)) {
+      warning(false, 'Received NaN for the `%s` attribute. If this is expected, cast ' + 'the value to a string.%s', name, getStackAddendum$3());
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    var isReserved = isReservedProp(name);
+
+    // Known attributes should match the casing specified in the property config.
+    if (possibleStandardNames.hasOwnProperty(lowerCasedName)) {
+      var standardName = possibleStandardNames[lowerCasedName];
+      if (standardName !== name) {
+        warning(false, 'Invalid DOM property `%s`. Did you mean `%s`?%s', name, standardName, getStackAddendum$3());
+        warnedProperties$1[name] = true;
+        return true;
+      }
+    } else if (!isReserved && name !== lowerCasedName) {
+      // Unknown attributes should have lowercase casing since that's how they
+      // will be cased anyway with server rendering.
+      warning(false, 'React does not recognize the `%s` prop on a DOM element. If you ' + 'intentionally want it to appear in the DOM as a custom ' + 'attribute, spell it as lowercase `%s` instead. ' + 'If you accidentally passed it from a parent component, remove ' + 'it from the DOM element.%s', name, lowerCasedName, getStackAddendum$3());
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (typeof value === 'boolean' && !shouldAttributeAcceptBooleanValue(name)) {
+      if (value) {
+        warning(false, 'Received `%s` for a non-boolean attribute `%s`.\n\n' + 'If you want to write it to the DOM, pass a string instead: ' + '%s="%s" or %s={value.toString()}.%s', value, name, name, value, name, getStackAddendum$3());
+      } else {
+        warning(false, 'Received `%s` for a non-boolean attribute `%s`.\n\n' + 'If you want to write it to the DOM, pass a string instead: ' + '%s="%s" or %s={value.toString()}.\n\n' + 'If you used to conditionally omit it with %s={condition && value}, ' + 'pass %s={condition ? value : undefined} instead.%s', value, name, name, value, name, name, name, getStackAddendum$3());
+      }
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    // Now that we've validated casing, do not validate
+    // data types for reserved props
+    if (isReserved) {
+      return true;
+    }
+
+    // Warn when a known attribute is a bad type
+    if (!shouldSetAttribute(name, value)) {
+      warnedProperties$1[name] = true;
+      return false;
+    }
+
+    return true;
+  };
+}
+
+var warnUnknownProperties = function (type, props, canUseEventSystem) {
+  var unknownProps = [];
+  for (var key in props) {
+    var isValid = validateProperty$1(type, key, props[key], canUseEventSystem);
+    if (!isValid) {
+      unknownProps.push(key);
+    }
+  }
+
+  var unknownPropString = unknownProps.map(function (prop) {
+    return '`' + prop + '`';
+  }).join(', ');
+  if (unknownProps.length === 1) {
+    warning(false, 'Invalid value for prop %s on <%s> tag. Either remove it from the element, ' + 'or pass a string or number value to keep it in the DOM. ' + 'For details, see https://fb.me/react-attribute-behavior%s', unknownPropString, type, getStackAddendum$3());
+  } else if (unknownProps.length > 1) {
+    warning(false, 'Invalid values for props %s on <%s> tag. Either remove them from the element, ' + 'or pass a string or number value to keep them in the DOM. ' + 'For details, see https://fb.me/react-attribute-behavior%s', unknownPropString, type, getStackAddendum$3());
+  }
+};
+
+function validateProperties$2(type, props, canUseEventSystem) {
+  if (isCustomComponent(type, props)) {
+    return;
+  }
+  warnUnknownProperties(type, props, canUseEventSystem);
+}
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// Based on reading the React.Children implementation. TODO: type this somewhere?
+
+var toArray = React.Children.toArray;
+
+var getStackAddendum = emptyFunction.thatReturns('');
+
+{
+  var validatePropertiesInDevelopment = function (type, props) {
+    validateProperties(type, props);
+    validateProperties$1(type, props);
+    validateProperties$2(type, props, /* canUseEventSystem */false);
+  };
+
+  var describeStackFrame = function (element) {
+    var source = element._source;
+    var type = element.type;
+    var name = getComponentName(type);
+    var ownerName = null;
+    return describeComponentFrame(name, source, ownerName);
+  };
+
+  var currentDebugStack = null;
+  var currentDebugElementStack = null;
+  var setCurrentDebugStack = function (stack) {
+    var frame = stack[stack.length - 1];
+    currentDebugElementStack = frame.debugElementStack;
+    // We are about to enter a new composite stack, reset the array.
+    currentDebugElementStack.length = 0;
+    currentDebugStack = stack;
+    ReactDebugCurrentFrame.getCurrentStack = getStackAddendum;
+  };
+  var pushElementToDebugStack = function (element) {
+    if (currentDebugElementStack !== null) {
+      currentDebugElementStack.push(element);
+    }
+  };
+  var resetCurrentDebugStack = function () {
+    currentDebugElementStack = null;
+    currentDebugStack = null;
+    ReactDebugCurrentFrame.getCurrentStack = null;
+  };
+  getStackAddendum = function () {
+    if (currentDebugStack === null) {
+      return '';
+    }
+    var stack = '';
+    var debugStack = currentDebugStack;
+    for (var i = debugStack.length - 1; i >= 0; i--) {
+      var frame = debugStack[i];
+      var _debugElementStack = frame.debugElementStack;
+      for (var ii = _debugElementStack.length - 1; ii >= 0; ii--) {
+        stack += describeStackFrame(_debugElementStack[ii]);
+      }
+    }
+    return stack;
+  };
+}
+
+var didWarnDefaultInputValue = false;
+var didWarnDefaultChecked = false;
+var didWarnDefaultSelectValue = false;
+var didWarnDefaultTextareaValue = false;
+var didWarnInvalidOptionChildren = false;
+var didWarnAboutNoopUpdateForComponent = {};
+var valuePropNames = ['value', 'defaultValue'];
+var newlineEatingTags = {
+  listing: true,
+  pre: true,
+  textarea: true
+};
+
+function getComponentName(type) {
+  return typeof type === 'string' ? type : typeof type === 'function' ? type.displayName || type.name : null;
+}
+
+// We accept any tag to be rendered but since this gets injected into arbitrary
+// HTML, we want to make sure that it's a safe tag.
+// http://www.w3.org/TR/REC-xml/#NT-Name
+var VALID_TAG_REGEX = /^[a-zA-Z][a-zA-Z:_\.\-\d]*$/; // Simplified subset
+var validatedTagCache = {};
+function validateDangerousTag(tag) {
+  if (!validatedTagCache.hasOwnProperty(tag)) {
+    !VALID_TAG_REGEX.test(tag) ? invariant(false, 'Invalid tag: %s', tag) : void 0;
+    validatedTagCache[tag] = true;
+  }
+}
+
+var processStyleName = memoizeStringOnly(function (styleName) {
+  return hyphenateStyleName(styleName);
+});
+
+function createMarkupForStyles(styles) {
+  var serialized = '';
+  var delimiter = '';
+  for (var styleName in styles) {
+    if (!styles.hasOwnProperty(styleName)) {
+      continue;
+    }
+    var isCustomProperty = styleName.indexOf('--') === 0;
+    var styleValue = styles[styleName];
+    {
+      if (!isCustomProperty) {
+        warnValidStyle$1(styleName, styleValue, getStackAddendum);
+      }
+    }
+    if (styleValue != null) {
+      serialized += delimiter + processStyleName(styleName) + ':';
+      serialized += dangerousStyleValue(styleName, styleValue, isCustomProperty);
+
+      delimiter = ';';
+    }
+  }
+  return serialized || null;
+}
+
+function warnNoop(publicInstance, callerName) {
+  {
+    var constructor = publicInstance.constructor;
+    var componentName = constructor && getComponentName(constructor) || 'ReactClass';
+    var warningKey = componentName + '.' + callerName;
+    if (didWarnAboutNoopUpdateForComponent[warningKey]) {
+      return;
+    }
+
+    warning(false, '%s(...): Can only update a mounting component. ' + 'This usually means you called %s() outside componentWillMount() on the server. ' + 'This is a no-op.\n\nPlease check the code for the %s component.', callerName, callerName, componentName);
+    didWarnAboutNoopUpdateForComponent[warningKey] = true;
+  }
+}
+
+function shouldConstruct(Component) {
+  return Component.prototype && Component.prototype.isReactComponent;
+}
+
+function getNonChildrenInnerMarkup(props) {
+  var innerHTML = props.dangerouslySetInnerHTML;
+  if (innerHTML != null) {
+    if (innerHTML.__html != null) {
+      return innerHTML.__html;
+    }
+  } else {
+    var content = props.children;
+    if (typeof content === 'string' || typeof content === 'number') {
+      return escapeTextForBrowser(content);
+    }
+  }
+  return null;
+}
+
+function flattenTopLevelChildren(children) {
+  if (!React.isValidElement(children)) {
+    return toArray(children);
+  }
+  var element = children;
+  if (element.type !== REACT_FRAGMENT_TYPE) {
+    return [element];
+  }
+  var fragmentChildren = element.props.children;
+  if (!React.isValidElement(fragmentChildren)) {
+    return toArray(fragmentChildren);
+  }
+  var fragmentChildElement = fragmentChildren;
+  return [fragmentChildElement];
+}
+
+function flattenOptionChildren(children) {
+  var content = '';
+  // Flatten children and warn if they aren't strings or numbers;
+  // invalid types are ignored.
+  React.Children.forEach(children, function (child) {
+    if (child == null) {
+      return;
+    }
+    if (typeof child === 'string' || typeof child === 'number') {
+      content += child;
+    } else {
+      {
+        if (!didWarnInvalidOptionChildren) {
+          didWarnInvalidOptionChildren = true;
+          warning(false, 'Only strings and numbers are supported as <option> children.');
+        }
+      }
+    }
+  });
+  return content;
+}
+
+function maskContext(type, context) {
+  var contextTypes = type.contextTypes;
+  if (!contextTypes) {
+    return emptyObject;
+  }
+  var maskedContext = {};
+  for (var contextName in contextTypes) {
+    maskedContext[contextName] = context[contextName];
+  }
+  return maskedContext;
+}
+
+function checkContextTypes(typeSpecs, values, location) {
+  {
+    checkPropTypes(typeSpecs, values, location, 'Component', getStackAddendum);
+  }
+}
+
+function processContext(type, context) {
+  var maskedContext = maskContext(type, context);
+  {
+    if (type.contextTypes) {
+      checkContextTypes(type.contextTypes, maskedContext, 'context');
+    }
+  }
+  return maskedContext;
+}
+
+var STYLE = 'style';
+var RESERVED_PROPS$1 = {
+  children: null,
+  dangerouslySetInnerHTML: null,
+  suppressContentEditableWarning: null,
+  suppressHydrationWarning: null
+};
+
+function createOpenTagMarkup(tagVerbatim, tagLowercase, props, namespace, makeStaticMarkup, isRootElement) {
+  var ret = '<' + tagVerbatim;
+
+  for (var propKey in props) {
+    if (!props.hasOwnProperty(propKey)) {
+      continue;
+    }
+    var propValue = props[propKey];
+    if (propValue == null) {
+      continue;
+    }
+    if (propKey === STYLE) {
+      propValue = createMarkupForStyles(propValue);
+    }
+    var markup = null;
+    if (isCustomComponent(tagLowercase, props)) {
+      if (!RESERVED_PROPS$1.hasOwnProperty(propKey)) {
+        markup = createMarkupForCustomAttribute(propKey, propValue);
+      }
+    } else {
+      markup = createMarkupForProperty(propKey, propValue);
+    }
+    if (markup) {
+      ret += ' ' + markup;
+    }
+  }
+
+  // For static pages, no need to put React ID and checksum. Saves lots of
+  // bytes.
+  if (makeStaticMarkup) {
+    return ret;
+  }
+
+  if (isRootElement) {
+    ret += ' ' + createMarkupForRoot();
+  }
+  return ret;
+}
+
+function validateRenderResult(child, type) {
+  if (child === undefined) {
+    invariant(false, '%s(...): Nothing was returned from render. This usually means a return statement is missing. Or, to render nothing, return null.', getComponentName(type) || 'Component');
+  }
+}
+
+function resolve(child, context) {
+  while (React.isValidElement(child)) {
+    // Safe because we just checked it's an element.
+    var element = child;
+    {
+      pushElementToDebugStack(element);
+    }
+    var Component = element.type;
+    if (typeof Component !== 'function') {
+      break;
+    }
+    var publicContext = processContext(Component, context);
+    var inst;
+    var queue = [];
+    var replace = false;
+    var updater = {
+      isMounted: function (publicInstance) {
+        return false;
+      },
+      enqueueForceUpdate: function (publicInstance) {
+        if (queue === null) {
+          warnNoop(publicInstance, 'forceUpdate');
+          return null;
+        }
+      },
+      enqueueReplaceState: function (publicInstance, completeState) {
+        replace = true;
+        queue = [completeState];
+      },
+      enqueueSetState: function (publicInstance, partialState) {
+        if (queue === null) {
+          warnNoop(publicInstance, 'setState');
+          return null;
+        }
+        queue.push(partialState);
+      }
+    };
+
+    if (shouldConstruct(Component)) {
+      inst = new Component(element.props, publicContext, updater);
+    } else {
+      inst = Component(element.props, publicContext, updater);
+      if (inst == null || inst.render == null) {
+        child = inst;
+        validateRenderResult(child, Component);
+        continue;
+      }
+    }
+
+    inst.props = element.props;
+    inst.context = publicContext;
+    inst.updater = updater;
+
+    var initialState = inst.state;
+    if (initialState === undefined) {
+      inst.state = initialState = null;
+    }
+    if (inst.componentWillMount) {
+      inst.componentWillMount();
+      if (queue.length) {
+        var oldQueue = queue;
+        var oldReplace = replace;
+        queue = null;
+        replace = false;
+
+        if (oldReplace && oldQueue.length === 1) {
+          inst.state = oldQueue[0];
+        } else {
+          var nextState = oldReplace ? oldQueue[0] : inst.state;
+          var dontMutate = true;
+          for (var i = oldReplace ? 1 : 0; i < oldQueue.length; i++) {
+            var partial = oldQueue[i];
+            var partialState = typeof partial === 'function' ? partial.call(inst, nextState, element.props, publicContext) : partial;
+            if (partialState) {
+              if (dontMutate) {
+                dontMutate = false;
+                nextState = _assign({}, nextState, partialState);
+              } else {
+                _assign(nextState, partialState);
+              }
+            }
+          }
+          inst.state = nextState;
+        }
+      } else {
+        queue = null;
+      }
+    }
+    child = inst.render();
+
+    {
+      if (child === undefined && inst.render._isMockFunction) {
+        // This is probably bad practice. Consider warning here and
+        // deprecating this convenience.
+        child = null;
+      }
+    }
+    validateRenderResult(child, Component);
+
+    var childContext;
+    if (typeof inst.getChildContext === 'function') {
+      var childContextTypes = Component.childContextTypes;
+      if (typeof childContextTypes === 'object') {
+        childContext = inst.getChildContext();
+        for (var contextKey in childContext) {
+          !(contextKey in childContextTypes) ? invariant(false, '%s.getChildContext(): key "%s" is not defined in childContextTypes.', getComponentName(Component) || 'Unknown', contextKey) : void 0;
+        }
+      } else {
+        warning(false, '%s.getChildContext(): childContextTypes must be defined in order to ' + 'use getChildContext().', getComponentName(Component) || 'Unknown');
+      }
+    }
+    if (childContext) {
+      context = _assign({}, context, childContext);
+    }
+  }
+  return { child: child, context: context };
+}
+
+var ReactDOMServerRenderer = function () {
+  function ReactDOMServerRenderer(children, makeStaticMarkup) {
+    _classCallCheck(this, ReactDOMServerRenderer);
+
+    var flatChildren = flattenTopLevelChildren(children);
+
+    var topFrame = {
+      // Assume all trees start in the HTML namespace (not totally true, but
+      // this is what we did historically)
+      domNamespace: Namespaces.html,
+      children: flatChildren,
+      childIndex: 0,
+      context: emptyObject,
+      footer: ''
+    };
+    {
+      topFrame.debugElementStack = [];
+    }
+    this.stack = [topFrame];
+    this.exhausted = false;
+    this.currentSelectValue = null;
+    this.previousWasTextNode = false;
+    this.makeStaticMarkup = makeStaticMarkup;
+  }
+  // TODO: type this more strictly:
+
+
+  ReactDOMServerRenderer.prototype.read = function read(bytes) {
+    if (this.exhausted) {
+      return null;
+    }
+
+    var out = '';
+    while (out.length < bytes) {
+      if (this.stack.length === 0) {
+        this.exhausted = true;
+        break;
+      }
+      var frame = this.stack[this.stack.length - 1];
+      if (frame.childIndex >= frame.children.length) {
+        var footer = frame.footer;
+        out += footer;
+        if (footer !== '') {
+          this.previousWasTextNode = false;
+        }
+        this.stack.pop();
+        if (frame.tag === 'select') {
+          this.currentSelectValue = null;
+        }
+        continue;
+      }
+      var child = frame.children[frame.childIndex++];
+      {
+        setCurrentDebugStack(this.stack);
+      }
+      out += this.render(child, frame.context, frame.domNamespace);
+      {
+        // TODO: Handle reentrant server render calls. This doesn't.
+        resetCurrentDebugStack();
+      }
+    }
+    return out;
+  };
+
+  ReactDOMServerRenderer.prototype.render = function render(child, context, parentNamespace) {
+    if (typeof child === 'string' || typeof child === 'number') {
+      var text = '' + child;
+      if (text === '') {
+        return '';
+      }
+      if (this.makeStaticMarkup) {
+        return escapeTextForBrowser(text);
+      }
+      if (this.previousWasTextNode) {
+        return '<!-- -->' + escapeTextForBrowser(text);
+      }
+      this.previousWasTextNode = true;
+      return escapeTextForBrowser(text);
+    } else {
+      var nextChild;
+
+      var _resolve = resolve(child, context);
+
+      nextChild = _resolve.child;
+      context = _resolve.context;
+
+      if (nextChild === null || nextChild === false) {
+        return '';
+      } else if (!React.isValidElement(nextChild)) {
+        var nextChildren = toArray(nextChild);
+        var frame = {
+          domNamespace: parentNamespace,
+          children: nextChildren,
+          childIndex: 0,
+          context: context,
+          footer: ''
+        };
+        {
+          frame.debugElementStack = [];
+        }
+        this.stack.push(frame);
+        return '';
+      } else if (nextChild.type === REACT_FRAGMENT_TYPE) {
+        var _nextChildren = toArray(nextChild.props.children);
+        var _frame = {
+          domNamespace: parentNamespace,
+          children: _nextChildren,
+          childIndex: 0,
+          context: context,
+          footer: ''
+        };
+        {
+          _frame.debugElementStack = [];
+        }
+        this.stack.push(_frame);
+        return '';
+      } else {
+        // Safe because we just checked it's an element.
+        var nextElement = nextChild;
+        return this.renderDOM(nextElement, context, parentNamespace);
+      }
+    }
+  };
+
+  ReactDOMServerRenderer.prototype.renderDOM = function renderDOM(element, context, parentNamespace) {
+    var tag = element.type.toLowerCase();
+
+    var namespace = parentNamespace;
+    if (parentNamespace === Namespaces.html) {
+      namespace = getIntrinsicNamespace(tag);
+    }
+
+    {
+      if (namespace === Namespaces.html) {
+        // Should this check be gated by parent namespace? Not sure we want to
+        // allow <SVG> or <mATH>.
+        warning(tag === element.type, '<%s /> is using uppercase HTML. Always use lowercase HTML tags ' + 'in React.', element.type);
+      }
+    }
+
+    validateDangerousTag(tag);
+
+    var props = element.props;
+    if (tag === 'input') {
+      {
+        ReactControlledValuePropTypes.checkPropTypes('input', props, getStackAddendum);
+
+        if (props.checked !== undefined && props.defaultChecked !== undefined && !didWarnDefaultChecked) {
+          warning(false, '%s contains an input of type %s with both checked and defaultChecked props. ' + 'Input elements must be either controlled or uncontrolled ' + '(specify either the checked prop, or the defaultChecked prop, but not ' + 'both). Decide between using a controlled or uncontrolled input ' + 'element and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components', 'A component', props.type);
+          didWarnDefaultChecked = true;
+        }
+        if (props.value !== undefined && props.defaultValue !== undefined && !didWarnDefaultInputValue) {
+          warning(false, '%s contains an input of type %s with both value and defaultValue props. ' + 'Input elements must be either controlled or uncontrolled ' + '(specify either the value prop, or the defaultValue prop, but not ' + 'both). Decide between using a controlled or uncontrolled input ' + 'element and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components', 'A component', props.type);
+          didWarnDefaultInputValue = true;
+        }
+      }
+
+      props = _assign({
+        type: undefined
+      }, props, {
+        defaultChecked: undefined,
+        defaultValue: undefined,
+        value: props.value != null ? props.value : props.defaultValue,
+        checked: props.checked != null ? props.checked : props.defaultChecked
+      });
+    } else if (tag === 'textarea') {
+      {
+        ReactControlledValuePropTypes.checkPropTypes('textarea', props, getStackAddendum);
+        if (props.value !== undefined && props.defaultValue !== undefined && !didWarnDefaultTextareaValue) {
+          warning(false, 'Textarea elements must be either controlled or uncontrolled ' + '(specify either the value prop, or the defaultValue prop, but not ' + 'both). Decide between using a controlled or uncontrolled textarea ' + 'and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components');
+          didWarnDefaultTextareaValue = true;
+        }
+      }
+
+      var initialValue = props.value;
+      if (initialValue == null) {
+        var defaultValue = props.defaultValue;
+        // TODO (yungsters): Remove support for children content in <textarea>.
+        var textareaChildren = props.children;
+        if (textareaChildren != null) {
+          {
+            warning(false, 'Use the `defaultValue` or `value` props instead of setting ' + 'children on <textarea>.');
+          }
+          !(defaultValue == null) ? invariant(false, 'If you supply `defaultValue` on a <textarea>, do not pass children.') : void 0;
+          if (Array.isArray(textareaChildren)) {
+            !(textareaChildren.length <= 1) ? invariant(false, '<textarea> can only have at most one child.') : void 0;
+            textareaChildren = textareaChildren[0];
+          }
+
+          defaultValue = '' + textareaChildren;
+        }
+        if (defaultValue == null) {
+          defaultValue = '';
+        }
+        initialValue = defaultValue;
+      }
+
+      props = _assign({}, props, {
+        value: undefined,
+        children: '' + initialValue
+      });
+    } else if (tag === 'select') {
+      {
+        ReactControlledValuePropTypes.checkPropTypes('select', props, getStackAddendum);
+
+        for (var i = 0; i < valuePropNames.length; i++) {
+          var propName = valuePropNames[i];
+          if (props[propName] == null) {
+            continue;
+          }
+          var isArray = Array.isArray(props[propName]);
+          if (props.multiple && !isArray) {
+            warning(false, 'The `%s` prop supplied to <select> must be an array if ' + '`multiple` is true.%s', propName, '');
+          } else if (!props.multiple && isArray) {
+            warning(false, 'The `%s` prop supplied to <select> must be a scalar ' + 'value if `multiple` is false.%s', propName, '');
+          }
+        }
+
+        if (props.value !== undefined && props.defaultValue !== undefined && !didWarnDefaultSelectValue) {
+          warning(false, 'Select elements must be either controlled or uncontrolled ' + '(specify either the value prop, or the defaultValue prop, but not ' + 'both). Decide between using a controlled or uncontrolled select ' + 'element and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components');
+          didWarnDefaultSelectValue = true;
+        }
+      }
+      this.currentSelectValue = props.value != null ? props.value : props.defaultValue;
+      props = _assign({}, props, {
+        value: undefined
+      });
+    } else if (tag === 'option') {
+      var selected = null;
+      var selectValue = this.currentSelectValue;
+      var optionChildren = flattenOptionChildren(props.children);
+      if (selectValue != null) {
+        var value;
+        if (props.value != null) {
+          value = props.value + '';
+        } else {
+          value = optionChildren;
+        }
+        selected = false;
+        if (Array.isArray(selectValue)) {
+          // multiple
+          for (var j = 0; j < selectValue.length; j++) {
+            if ('' + selectValue[j] === value) {
+              selected = true;
+              break;
+            }
+          }
+        } else {
+          selected = '' + selectValue === value;
+        }
+
+        props = _assign({
+          selected: undefined,
+          children: undefined
+        }, props, {
+          selected: selected,
+          children: optionChildren
+        });
+      }
+    }
+
+    {
+      validatePropertiesInDevelopment(tag, props);
+    }
+
+    assertValidProps(tag, props, getStackAddendum);
+
+    var out = createOpenTagMarkup(element.type, tag, props, namespace, this.makeStaticMarkup, this.stack.length === 1);
+    var footer = '';
+    if (omittedCloseTags.hasOwnProperty(tag)) {
+      out += '/>';
+    } else {
+      out += '>';
+      footer = '</' + element.type + '>';
+    }
+    var children;
+    var innerMarkup = getNonChildrenInnerMarkup(props);
+    if (innerMarkup != null) {
+      children = [];
+      if (newlineEatingTags[tag] && innerMarkup.charAt(0) === '\n') {
+        // text/html ignores the first character in these tags if it's a newline
+        // Prefer to break application/xml over text/html (for now) by adding
+        // a newline specifically to get eaten by the parser. (Alternately for
+        // textareas, replacing "^\n" with "\r\n" doesn't get eaten, and the first
+        // \r is normalized out by HTMLTextAreaElement#value.)
+        // See: <http://www.w3.org/TR/html-polyglot/#newlines-in-textarea-and-pre>
+        // See: <http://www.w3.org/TR/html5/syntax.html#element-restrictions>
+        // See: <http://www.w3.org/TR/html5/syntax.html#newlines>
+        // See: Parsing of "textarea" "listing" and "pre" elements
+        //  from <http://www.w3.org/TR/html5/syntax.html#parsing-main-inbody>
+        out += '\n';
+      }
+      out += innerMarkup;
+    } else {
+      children = toArray(props.children);
+    }
+    var frame = {
+      domNamespace: getChildNamespace(parentNamespace, element.type),
+      tag: tag,
+      children: children,
+      childIndex: 0,
+      context: context,
+      footer: footer
+    };
+    {
+      frame.debugElementStack = [];
+    }
+    this.stack.push(frame);
+    this.previousWasTextNode = false;
+    return out;
+  };
+
+  return ReactDOMServerRenderer;
+}();
+
+/**
+ * Render a ReactElement to its initial HTML. This should only be used on the
+ * server.
+ * See https://reactjs.org/docs/react-dom-server.html#rendertostring
+ */
+function renderToString(element) {
+  var renderer = new ReactDOMServerRenderer(element, false);
+  var markup = renderer.read(Infinity);
+  return markup;
+}
+
+/**
+ * Similar to renderToString, except this doesn't create extra DOM attributes
+ * such as data-react-id that React uses internally.
+ * See https://reactjs.org/docs/react-dom-server.html#rendertostaticmarkup
+ */
+function renderToStaticMarkup(element) {
+  var renderer = new ReactDOMServerRenderer(element, true);
+  var markup = renderer.read(Infinity);
+  return markup;
+}
+
+function renderToNodeStream() {
+  invariant(false, 'ReactDOMServer.renderToNodeStream(): The streaming API is not available in the browser. Use ReactDOMServer.renderToString() instead.');
+}
+
+function renderToStaticNodeStream() {
+  invariant(false, 'ReactDOMServer.renderToStaticNodeStream(): The streaming API is not available in the browser. Use ReactDOMServer.renderToStaticMarkup() instead.');
+}
+
+// Note: when changing this, also consider https://github.com/facebook/react/issues/11526
+var ReactDOMServerBrowser = {
+  renderToString: renderToString,
+  renderToStaticMarkup: renderToStaticMarkup,
+  renderToNodeStream: renderToNodeStream,
+  renderToStaticNodeStream: renderToStaticNodeStream,
+  version: ReactVersion
+};
+
+var ReactDOMServerBrowser$1 = Object.freeze({
+	default: ReactDOMServerBrowser
+});
+
+var ReactDOMServer = ( ReactDOMServerBrowser$1 && ReactDOMServerBrowser ) || ReactDOMServerBrowser$1;
+
+// TODO: decide on the top-level export form.
+// This is hacky but makes it work with both Rollup and Jest
+var server_browser = ReactDOMServer['default'] ? ReactDOMServer['default'] : ReactDOMServer;
+
+module.exports = server_browser;
+  })();
+}
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ }),
+/* 436 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(0), __webpack_require__(1), __webpack_require__(66)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports, require('react'), require('prop-types'), require('../lib/String'));
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports, global.react, global.propTypes, global.String);
+    global.HeatMap = mod.exports;
+  }
+})(this, function (exports, _react, _propTypes, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.HeatMap = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseover', 'recenter'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var HeatMap = exports.HeatMap = function (_React$Component) {
+    _inherits(HeatMap, _React$Component);
+
+    function HeatMap() {
+      _classCallCheck(this, HeatMap);
+
+      return _possibleConstructorReturn(this, (HeatMap.__proto__ || Object.getPrototypeOf(HeatMap)).apply(this, arguments));
+    }
+
+    _createClass(HeatMap, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.heatMapPromise = wrappedPromise();
+        this.renderHeatMap();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || this.props.position !== prevProps.position) {
+          if (this.heatMap) {
+            this.heatMap.setMap(null);
+            this.renderHeatMap();
+          }
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.heatMap) {
+          this.heatMap.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderHeatMap',
+      value: function renderHeatMap() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            positions = _props.positions,
+            mapCenter = _props.mapCenter,
+            icon = _props.icon,
+            gradient = _props.gradient,
+            radius = _props.radius,
+            opacity = _props.opacity;
+
+
+        if (!google) {
+          return null;
+        }
+
+        positions = positions.map(function (pos) {
+          return new google.maps.LatLng(pos.lat, pos.lng);
+        });
+
+        var pref = {
+          map: map,
+          data: positions
+        };
+
+        this.heatMap = new google.maps.visualization.HeatmapLayer(pref);
+
+        this.heatMap.set('gradient', gradient);
+
+        this.heatMap.set('radius', radius === undefined ? 20 : radius);
+
+        this.heatMap.set('opacity', opacity === undefined ? 0.2 : opacity);
+
+        evtNames.forEach(function (e) {
+          _this2.heatMap.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.heatMapPromise.resolve(this.heatMap);
+      }
+    }, {
+      key: 'getHeatMap',
+      value: function getHeatMap() {
+        return this.heatMapPromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.heatMap, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return HeatMap;
+  }(_react2.default.Component);
+
+  HeatMap.propTypes = {
+    position: _propTypes2.default.object,
+    map: _propTypes2.default.object,
+    icon: _propTypes2.default.string
+  };
+
+  evtNames.forEach(function (e) {
+    return HeatMap.propTypes[e] = _propTypes2.default.func;
+  });
+
+  HeatMap.defaultProps = {
+    name: 'HeatMap'
+  };
+
+  exports.default = HeatMap;
+});
+
+/***/ }),
+/* 437 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(0), __webpack_require__(1), __webpack_require__(66)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports, require('react'), require('prop-types'), require('../lib/String'));
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports, global.react, global.propTypes, global.String);
+    global.Polygon = mod.exports;
+  }
+})(this, function (exports, _react, _propTypes, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Polygon = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseout', 'mouseover'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Polygon = exports.Polygon = function (_React$Component) {
+    _inherits(Polygon, _React$Component);
+
+    function Polygon() {
+      _classCallCheck(this, Polygon);
+
+      return _possibleConstructorReturn(this, (Polygon.__proto__ || Object.getPrototypeOf(Polygon)).apply(this, arguments));
+    }
+
+    _createClass(Polygon, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.polygonPromise = wrappedPromise();
+        this.renderPolygon();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map) {
+          if (this.polygon) {
+            this.polygon.setMap(null);
+            this.renderPolygon();
+          }
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.polygon) {
+          this.polygon.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderPolygon',
+      value: function renderPolygon() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            paths = _props.paths,
+            strokeColor = _props.strokeColor,
+            strokeOpacity = _props.strokeOpacity,
+            strokeWeight = _props.strokeWeight,
+            fillColor = _props.fillColor,
+            fillOpacity = _props.fillOpacity;
+
+
+        if (!google) {
+          return null;
+        }
+
+        var params = {
+          map: map,
+          paths: paths,
+          strokeColor: strokeColor,
+          strokeOpacity: strokeOpacity,
+          strokeWeight: strokeWeight,
+          fillColor: fillColor,
+          fillOpacity: fillOpacity
+        };
+
+        this.polygon = new google.maps.Polygon(params);
+
+        evtNames.forEach(function (e) {
+          _this2.polygon.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.polygonPromise.resolve(this.polygon);
+      }
+    }, {
+      key: 'getPolygon',
+      value: function getPolygon() {
+        return this.polygonPromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.polygon, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return Polygon;
+  }(_react2.default.Component);
+
+  Polygon.propTypes = {
+    paths: _propTypes2.default.array,
+    strokeColor: _propTypes2.default.string,
+    strokeOpacity: _propTypes2.default.number,
+    strokeWeight: _propTypes2.default.number,
+    fillColor: _propTypes2.default.string,
+    fillOpacity: _propTypes2.default.number
+  };
+
+  evtNames.forEach(function (e) {
+    return Polygon.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Polygon.defaultProps = {
+    name: 'Polygon'
+  };
+
+  exports.default = Polygon;
+});
+
+/***/ }),
+/* 438 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else if (typeof exports !== "undefined") {
+    factory(exports);
+  } else {
+    var mod = {
+      exports: {}
+    };
+    factory(mod.exports);
+    global.cancelablePromise = mod.exports;
+  }
+})(this, function (exports) {
+  "use strict";
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  // https://facebook.github.io/react/blog/2015/12/16/ismounted-antipattern.html
+
+  var makeCancelable = exports.makeCancelable = function makeCancelable(promise) {
+    var hasCanceled_ = false;
+
+    var wrappedPromise = new Promise(function (resolve, reject) {
+      promise.then(function (val) {
+        return hasCanceled_ ? reject({ isCanceled: true }) : resolve(val);
+      });
+      promise.catch(function (error) {
+        return hasCanceled_ ? reject({ isCanceled: true }) : reject(error);
+      });
+    });
+
+    return {
+      promise: wrappedPromise,
+      cancel: function cancel() {
+        hasCanceled_ = true;
+      }
+    };
+  };
+});
+
+/***/ }),
+/* 439 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+var shelterData = exports.shelterData = [{
+    "formatted_address": "525 5th St, San Francisco, CA 94107, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7777275,
+            "lng": -122.3997819
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77899552989273,
+                "lng": -122.3985347201073
+            },
+            "southwest": {
+                "lat": 37.77629587010728,
+                "lng": -122.4012343798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "80d513e57342bf35939df3ebecba29804ac5426e",
+    "name": "MSC Homeless Shelter",
+    "opening_hours": {
+        "open_now": true,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 4032,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAcaqgYz-V-yHSarVPTdSaWcDQ6dRM_cky77gfgG7zUk05fjIorU36V0LXYq7LhK1Xob_WJJpZGI3Zu5m8tTH4_kMqBZnz3Km6b5TYoAuG6BguP_zVtZozZSKfnMpCgRNFEhDRfQ30i8T04vTkeUj5-26lGhRmqlMOz0YmFMsqDfL4QtFTKfiV1w",
+        "width": 3024
+    }],
+    "place_id": "ChIJyTdZXtV_j4AR5QrKZR9GO0k",
+    "rating": 2.9,
+    "reference": "CmRbAAAAOI_6Uycdasi10uUjW8CN3QWnXPd8DFfzMMmkQL8GFxBmdNQODcy2oZJcFomjhdu2F78v6dsO54ZTWFpRdpdrqclFEf6S1y0FWhuAbygC-Rt8SZQIJ17wH_JdlvCqcLMHEhAcjl-3_Y3cYsKJI3vksELcGhQNYNgYyjLIAsFr75svqQJbd1jzEw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "201 8th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7762907,
+            "lng": -122.4112102
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77754517989273,
+                "lng": -122.4099826201073
+            },
+            "southwest": {
+                "lat": 37.77484552010728,
+                "lng": -122.4126822798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7b3277d3876e37db583aa30e87802dac5e8a80b1",
+    "name": "The Sanctuary",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1363,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAJeoIvh0N_D_na_1WAWZfL-1L6mI_oN-PVAwBCNptXKKuoVNVh08ZCiEzWoPQeQeTjtZTvvnhtIavan8stGHOW5ajUdyRmC0pJ8MQMtw1IX6hWMKrFG83M7ARqr3S1owOEhBVfyj5r15cvMaV36SbetETGhRfsHOSoyRW_oKerJPRNKvcZq-0eQ",
+        "width": 2048
+    }],
+    "place_id": "ChIJ7zZq6YKAhYARinpYNFB3AFI",
+    "rating": 3.7,
+    "reference": "CmRbAAAA6hImiLOeWZXHkyCbQphkvQj831TJRyX6LacPO69MYdvaGxVwybs_ITlLoCxzf8ZhTlywS0vxIPRgvo1_5Tv3bLLrk8NNE7MRJp4gVDLPEn82VHQv2IhFT4Xt6LFs130AEhCupPAQUmCNDy_1QR7kKeavGhSyxyP6iX2QsO7uOMI9IuZfg1c3WQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1950 Mission St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.76578140000001,
+            "lng": -122.4198681
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76713422989273,
+                "lng": -122.4184682201072
+            },
+            "southwest": {
+                "lat": 37.76443457010729,
+                "lng": -122.4211678798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "6b5aa3544d962ddf6bda437bf2491fe0c8befa43",
+    "name": "Navigation Center",
+    "photos": [{
+        "height": 2592,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAABJx5Wo9qUxr9czRz_pP0m_7qK9FypuPziPXbKSzUA0vKiUDXwU9XEbXNNVqrQp4qkGR6vvLrD9ZUCpZLQslPukoxN93OFIV5oMo5j0auTN0OFwz3p2GZAsthgz_LO7EHEhAumqqzIMMMt8fcc62ykwWGGhS3MBCt_mz-Iltvn7rOpYWf6mmA3Q",
+        "width": 1944
+    }],
+    "place_id": "ChIJfQ8YviN-j4ARJVDRHBhhx_E",
+    "rating": 3.5,
+    "reference": "CmRbAAAAH4QROzdV3iQiCcZdsXYUFqx0M900o4JKIZuwyG2TW23I3d5MIauVHbk3V3aMy78M0HnSyZXl_iRljANMGiB-iYpy3qeMwQqrG-rL8r5f-nI8xpRhdMkGIU-Lqwl39Fc_EhAE71P-mCJ92cSdvWMLLow5GhRtlkpTWdcvwFQnYwv6kcO6_irgaw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1001 Polk St, San Francisco, CA 94109, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7861563,
+            "lng": -122.4201283
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78752632989272,
+                "lng": -122.4186215201073
+            },
+            "southwest": {
+                "lat": 37.78482667010728,
+                "lng": -122.4213211798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "3e2a11722365e112abe7db28d6a8118e5806d116",
+    "name": "Next Door Shelter",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1281,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAMObU2esgUppJpejFpH2UOXitwGLw31ku_14NELuGSr4j4XeXJDyT_Vf55yyVFARVX3rwEjm6uE68nPoD8JFC9ErS-lg4yLDOx-rJv4w4jtP0U7pMYRPdkzdsC5DfbsnEEhCXxgAj2c-HdQLvT58jI8tCGhQxxILvgnT9JDQUKWGcQsB7VAbMHA",
+        "width": 2048
+    }],
+    "place_id": "ChIJ8UtpopaAhYARl7nz1jUykTE",
+    "rating": 3.1,
+    "reference": "CmRbAAAASm-wdjCc-jelEQsjSw6h2tPurC4eBFJoizqFFvan_eIaDspDSjy5lD7HLqA2peaR1vLtC2cP5BVOlJA0VfF2hHrlbEhC7mkEuupiPqB6JBVdixyR3Hw6c6-KJNEjGjC7EhDl1lwETdiFVgHx__p3RPNcGhQB8rNrmL9TJjKrF933g8N3otqk-g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1065 Sutter St, San Francisco, CA 94109, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7879898,
+            "lng": -122.4177223
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78938202989272,
+                "lng": -122.4163810701073
+            },
+            "southwest": {
+                "lat": 37.78668237010727,
+                "lng": -122.4190807298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "e110f39fcf957a4972278b597084fa7cc3ec1540",
+    "name": "Raphael House",
+    "photos": [{
+        "height": 2592,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA9DGmL7WcNJg149ZOz_4vD18xE8S25W9YaV9ej_zexPrmEI0pjLoZNbaXiy9pHb5OXhaLme7jakc56-mTWoE6r62tZpoDZnkB4B-0LE6LgOzKVFQiEPxL8v2H5uU9QLjIEhCCyvoGbLXhtSrfL_zNQV00GhTU2rRgd4ByCeOc56QyMnq3U7j5ag",
+        "width": 3872
+    }],
+    "place_id": "ChIJt3uC8pOAhYARVgz1HNWtaxI",
+    "rating": 4.2,
+    "reference": "CmRbAAAAlz9lSJGki4nufAxr0HWHp5Ns45gK_wfcy-GcGbjLsE8OFSNi7GlhBL3y7I-ka4bH_mv988Ysj2YpvxRTK4Lw2jjp5AnT5y1vyfPvpO0io23z_LBMrSumL1dZkDj0F0oaEhCGpLwETtM9hdJPrrojqLAZGhQGOiEH0rO4AP7__IAcBp28seSjRA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "164 6th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7800629,
+            "lng": -122.4077754
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78145022989273,
+                "lng": -122.4063785701073
+            },
+            "southwest": {
+                "lat": 37.77875057010728,
+                "lng": -122.4090782298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "56a892243bafc62c8847eac9794d9993ec3e7eb9",
+    "name": "Cityteam",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1520,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAOQCOyUVcjd3QKA-S93cT94FjZDaBjGD4EHZzH-SxbNeZKRMX5JaWJ24AJIVwjaC7nAdGk4PwKxJRCyRTWzuEbbDbeiG7kUrt7xgnOBM53pnXMoeyyt3SZdtdkS4zdm0gEhAaI3MLgMg3jFn64DogVnBDGhQWOIczeNU1A4cwr4IG_D1YMhOEtg",
+        "width": 2688
+    }],
+    "place_id": "ChIJD6k1-oOAhYARn10_SPzqgzA",
+    "rating": 4.5,
+    "reference": "CmRbAAAAuaz4UHt6lVh3sXlrMBA37VK7xGXEcGFnbkNSg0Lxt7dFZWokWymk_Y0uNEb8Ttvtijd_q-tUhqyvUFXwc9d3sI8YZlMDOyOVmLsMHgY6TBMoaRVb37GCwIt82Cf2hyBREhCC2qt4vQ3g7w9axMVEFhYAGhS3zcL-MHTKFJnhqPAlaITf5xqTHw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "165 Capp St, San Francisco, CA 94110, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.764058,
+            "lng": -122.418312
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76539807989273,
+                "lng": -122.4171123701073
+            },
+            "southwest": {
+                "lat": 37.76269842010728,
+                "lng": -122.4198120298928
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "17119825eda52da890e0cff36f3e10cfc691ac11",
+    "name": "Mission Neighborhood Resource Center",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2576,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAX8kIRaDle47v_PHUB-qmP9jWoxf7SwpHBdUCoRcLGvlb6dPtOFwIuJ8rCjvRu7jTye9BJJwYZYJ_onutJTXMj7mmKB4M01VIth12SgoO4BEyXk2wrvmLvMoNxXFpEAHBEhCCSOa8xlmXxaeK1ntLdooHGhQBO2mSbzS7fVMwBmQwtqBX4rRn6w",
+        "width": 1932
+    }],
+    "place_id": "ChIJL819YCN-j4ARMVIdUjtxiv0",
+    "rating": 4.1,
+    "reference": "CmRbAAAADbJg8gnNcjGP4uggbt2SDvfjfNWDMrfGdEjuawHsPAQhro1MdjKx1vDq9q9lO1N2Ln3H4zH3u7X9zI8EMNolc1xGIa9f8NHBu-dVLfmu-s3XOTPl4k24uyypc_q5yj-eEhBtjw-GSZ7KmF1RrKhKrecRGhQlzgihB3obO4-incczfwpOTp8eZA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "49 Powell St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7852426,
+            "lng": -122.4080899
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78660922989273,
+                "lng": -122.4066063701073
+            },
+            "southwest": {
+                "lat": 37.78390957010728,
+                "lng": -122.4093060298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "c558f0bc2f2c5b1d3984c824703e57d97872a1fb",
+    "name": "Compass Family Services",
+    "photos": [{
+        "height": 750,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA8ZeWh3HsA5mDwHdL3_K082TweOXhPkBSv9UlnWmhHiV_zELFLbdXmyy1q12umZ9mz9ZDhTdwHw64JOUYUZGRjNfhwWmWPsDShjPb2n0unL4QmkHpc-U1sdaif5du0-cxEhBUjfiYBo-WdNZh0Rik3BBXGhR8zOpNG9cMA56a2t-qcmUVtkbUKA",
+        "width": 750
+    }],
+    "place_id": "ChIJrzICWI-AhYARikIbwnzIPC4",
+    "reference": "CmRbAAAAjqQeon1FzWPLaq6dAYA9CSciHuJQYNdGXDCeHRi3k02a06IIr3-uA4h9Z0I0LMLXLndSa_5eu4wNXz7ygUBZi2QRVM3OUZz-MukQ2GRMtHZcGUUyn3PiPSmCAICT9oXCEhDDAJc43cNpDSZx7H9UTyLnGhSJYW46Gm9v7WN0BnuuJ1PoO7AXqw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1025 Howard St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.77891,
+            "lng": -122.4078899
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78032377989272,
+                "lng": -122.4066210201073
+            },
+            "southwest": {
+                "lat": 37.77762412010728,
+                "lng": -122.4093206798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "2a4b485ee098f70368de009aad6326a7f95e9bbe",
+    "name": "Ark of Refuge Inc",
+    "place_id": "ChIJL0Mw3YOAhYARDiiKGQ1Kt4U",
+    "reference": "CmRbAAAA85vP_f1JKEXHTF_eRO7oAc8yInXba6d6BktLg0Bxy-kENU36z0IWoGC8M6K6yh2j9k5MJA4lCpXnbX4AAMSdQYMVJ3OGY7bTL-AbaVZd6QyU7SD8Zx8mi1jrG5DVnsHyEhAQldh2RMziyqXRgVIPCGnqGhTGSuxP2bveuK5xSv8B7ZPx85nbJg",
+    "types": ["church", "place_of_worship", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "260 Golden Gate Ave, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.781966,
+            "lng": -122.415002
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78320282989272,
+                "lng": -122.4136317201073
+            },
+            "southwest": {
+                "lat": 37.78050317010728,
+                "lng": -122.4163313798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "97a00e8602ed5e130730a9b49a7e2f2a1879ee36",
+    "name": "Hamilton Families | Hamilton Shelter Program",
+    "photos": [{
+        "height": 1153,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAkLCiuxabinmeQrUDXtzKaMDtmIgve4JQPrCWSta9n5tMz4VpYSTfL0fcqvywuaWlYo2EjkRaXkElR4xtX0uyju17jtMO8xArAVMiUdWvaDyP8pjGXu__TxinwIc1zIlTEhAbdzIXw73HUMz7Tc32Cy6QGhSn4O8l5DWxYOhH-ApirxOUXLCvnw",
+        "width": 2048
+    }],
+    "place_id": "ChIJBZ2-jZqAhYARF3HDeoypWYk",
+    "rating": 3.5,
+    "reference": "CmRbAAAAMKHt6KdhyPQDiGWnwA7l2F-fBWKHaUQZYPd-RBrtcAcEYCzW-7rStXUImyxw0OfTgQ4k-RgAmGwcitFNfV2i6sjMe3sfZ1JgUm1H-qeiiut6f58jpiakU25qXdTXzpjpEhCL9plnnFOCmIVs4tR3K7UqGhTbRVMvfC3lmfkYY320Aiw9z8JQbg",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "64 Turk St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7834304,
+            "lng": -122.4101895
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78471397989271,
+                "lng": -122.4088260201072
+            },
+            "southwest": {
+                "lat": 37.78201432010727,
+                "lng": -122.4115256798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7dcf8e4e2055245c07873811993a3add290563ac",
+    "name": "Aranda Residence",
+    "photos": [{
+        "height": 3024,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAcjJD1sDtvfE1JntHvRXp1ZpgqFaq8RkMfo8oQlT4kv7ZAGDrsfKBoIR8H-lecCx_2A5EYEKYyEqIJdAyh33JOXb1hga4Jga73dJNbIq89xs9f2l4dOCEzQ2s7X4WREFtEhCMGHs_ghZQhmN-NgS56sYiGhSxM41rwJ9peZ1nQh7GTB1lECzfiw",
+        "width": 4032
+    }],
+    "place_id": "ChIJrZeTdIWAhYAR2E8oAclzAYE",
+    "rating": 4.7,
+    "reference": "CmRbAAAADuh5g1L5CLxG0fegdAylGQREtIWPbvECgg_LPSFX1f4p4q3UkVS-9f66vriE_qMLVZkMRgxb-Y08A-sPcEZg_qU87ShzeftIeQ6gLx-mlrqOcDaGC1gWM8PYWzrDBznrEhB82t6LYfFyVSg0JtVpdXJ8GhSgxt0lfbEoSrF0oTdbCJrVSC3JFA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "25 Van Ness Ave #340, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.775679,
+            "lng": -122.419848
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77705257989272,
+                "lng": -122.4183066701073
+            },
+            "southwest": {
+                "lat": 37.77435292010728,
+                "lng": -122.4210063298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "be1809b58d4df132c004e4896b82b6028328852b",
+    "name": "Project Homeless Connect",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2432,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA3LRPxaef08yYnGGzXNowf7f5JfQK64-V2aFzu1YtDMl77X0VwRNoVKJbMSNlUmMAY20fAatVRFF-333_HtBsLRk5M35ZRhrxy1POvARblyKakwOZqIKvKxxX90OyQRIEEhBY0G4y49N9evd6R7avnp0HGhR6sqgEF9kezVerooS7VP9_8AGfGA",
+        "width": 4320
+    }],
+    "place_id": "ChIJOS1iwJ6AhYARTd9vESZL36Q",
+    "rating": 4.3,
+    "reference": "CmRbAAAAlEN--Jxa9kz50wXqKq_ZXTa3V7O0lprtEEu5LC_azfT1GWSIvOuP76iHz8eQDNYBmY3dvFSKpTVJpyS-outSDSrGF08HgI9OhqtPBuFHKd_W6x5nKwvndLsjYtEmqjYdEhBnJTv2OU1Gzg-TIalFhPNhGhSFmBCkAhLDm9ztKPFixuS9aaC89g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "165 8th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7807714,
+            "lng": -122.4082152
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78212122989272,
+                "lng": -122.4068653701073
+            },
+            "southwest": {
+                "lat": 37.77942157010728,
+                "lng": -122.4095650298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "d6925b7e99c7fb05e21655d2a15810c92f185d72",
+    "name": "ECS of San Francisco",
+    "photos": [{
+        "height": 465,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA1Ft1XMNrisd-ycVQgRXvO6udVZL8KdHdXbCJlnBSbzAwTK6bOoHsMZJBCBUXPiAAybo_sa1bOnXz71HZxkmtfXTzq4KnEW_EkbMk4RuJv9vu-lGT0HLmP86GknsxbGtWEhC9qma_IXDapHaj8YfQL1J3GhQATz9yICQzxFUnO3mKmZ6G8GYGCQ",
+        "width": 650
+    }],
+    "place_id": "ChIJ5971C4SAhYARQPx6rPElNFo",
+    "reference": "CmRbAAAAw8JmZAAG0rlESgKWWczimQEdqMx4Gzf7S-vUH5_RXpyv2OXDtnQfsPyrefEYLW7ysqU9UGIiJTRKx_lyEQUIaQiecdZZ2yZFy14B7vY9c7GWJxTEQvHeoRsJh4tOSxzqEhCY03PWA_8SOPwnZd2EmGTlGhTcV-1cPO_97FzWLYtLAWo12EOjcg",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "468 Turk St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.782639,
+            "lng": -122.416891
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78389467989273,
+                "lng": -122.4155222701073
+            },
+            "southwest": {
+                "lat": 37.78119502010728,
+                "lng": -122.4182219298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "8fe52fd226d5adb153c05cc6a43c2888998d30c4",
+    "name": "Coalition On Homelessness San Francisco",
+    "place_id": "ChIJz29SnpCAhYARmL5KVc3Z1C0",
+    "rating": 4.1,
+    "reference": "CmRbAAAA3CPB5JixkANZVnLC3u_AFLyYejItJhGSWHCVflTEJf_bQe-TkLqcfQmVC8-yzaNQJsyw4SYkb0vMiGfCt4bDd8xsobRUqdB_yMQF7vAiH0O1_yO4ViDRutLgyNx9BTWxEhAVgfWzksfJriWFtbZK1RroGhQ7T7am09i-nTuevTnM_9jP3GTPzQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1663 Mission St #225, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7711792,
+            "lng": -122.4193759
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77255522989272,
+                "lng": -122.4181207701073
+            },
+            "southwest": {
+                "lat": 37.76985557010727,
+                "lng": -122.4208204298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "69be275e18d23db3db7088aa950b8cade817ecdc",
+    "name": "La Casa De Las Madres",
+    "place_id": "ChIJlStrvCB-j4ARPNNeHpzmjVI",
+    "rating": 4.6,
+    "reference": "CmRbAAAABZhec83VH0STyFB-JFGPhTM_vw-0Qhny5pQ2gCsWnSMhfD32li48g8dbtc0ZLCdd9-njNjrpQ_q-HXZWj4c6GsMV_PwIY9lasNm4hZKUHPoN_UI6KCTdpJf4FzKJoxVlEhCz0ehSvHcPY_WekwWnmyOuGhQFWlPE7SNM6RVU0t8m-pK28sNh7g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "20 12th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7739974,
+            "lng": -122.4199986
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77538982989272,
+                "lng": -122.4185938701073
+            },
+            "southwest": {
+                "lat": 37.77269017010727,
+                "lng": -122.4212935298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "d27e83246db69d28adf7ead63bb8939159fe845b",
+    "name": "Navigation Center",
+    "photos": [{
+        "height": 3264,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA64CDma1F3dd9qOeE8bm8445zmpxOw8JNWrRhSA9v1adJNdXP03We46J4fLVqG1dAfu9RloC3KWzW3QsTQoI45YTYOyJkycBpwFx9F9doN_tNiscU9NO2MZRfj2FVQtDmEhCCg-zSNNMsG901-G_qo9ZaGhSEGcD-wmyiEa1exlcE1hkR6DCBJw",
+        "width": 2448
+    }],
+    "place_id": "ChIJSy_UXZ6AhYARFCTvV049q_s",
+    "rating": 2.7,
+    "reference": "CmRbAAAAWQBiX5gwHJyEuflf4gLZjfgPm1-HKn4P-Xm89y2lx4jtZdkMO-5NB0ImIeBVwQWTPPzoV1fFaAlp67jwtUfR-wO240PoeDd99H7QEdZaBFz8x16i1zvvzTVjnGUwlL9zEhBTTkAEyprk0PjTc_JUXN5AGhSqy3a38xIXj2BLW6cAelnM6CzBPg",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "150 Golden Gate Ave, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7821992,
+            "lng": -122.4132137
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78343297989272,
+                "lng": -122.4118405201073
+            },
+            "southwest": {
+                "lat": 37.78073332010727,
+                "lng": -122.4145401798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "1030425d89f0f2dcb54450278c9c3b20819afac1",
+    "name": "St. Anthony Foundation",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 4032,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAmM9qhXUjcraHRJdv-7Xfcgi9h1TMWRtqYjS6XbQk2LNLOSm0jHeWwMww1EyOqnU_qywk5bSu6mcj8OQtjdR5dzyV_PrW6bQSrUBSP9eZEsBtLmH7k52QKCDdUi9re8nNEhBvvKfGE35qu5X_CQalBG8gGhTrXL3EB2rJsCWXaYuet2cStUYlNA",
+        "width": 3024
+    }],
+    "place_id": "ChIJg7PXzpqAhYARakCEWcN4fe8",
+    "rating": 4.6,
+    "reference": "CmRbAAAADDw2hK3P20pk5lmdp50Ym5BDSm1nV5yTb_pokNSIyESi_cMubAPBXMqDaW5AYEDYrcy5sS3G7HnFQnnxuFE2I8hBP2uTNQrCGLSDODhsqeg2AsuyplgSSL5XtM2OsW3mEhB9WmyArsnRmduMMl-4Q_QhGhScT_KZXwMhBZtTP4S0JORqm69szg",
+    "types": ["health", "food", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "869 Ellis St, San Francisco, CA 94109, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7839602,
+            "lng": -122.4202815
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78531047989272,
+                "lng": -122.4189317701073
+            },
+            "southwest": {
+                "lat": 37.78261082010728,
+                "lng": -122.4216314298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "1e5861a5375fc0240303960a4932d9eeb42d4112",
+    "name": "Lark - Inn for Youth",
+    "place_id": "ChIJx9nCHZeAhYAR-FJUCz_7Iz8",
+    "reference": "CmRbAAAAiePMZNbRXIvmAUstiM5PUOF5EJ-7GJ4NQomXULloC-a2IPRO4MKYDhzziBCfYqQHhDrr7EaNLlXsmGBa2lnCoeyk_uHd8RSINFoGvTLFI8kEvyLVXTw6j68ol-oAwMKkEhAeruK-n1t9UZi5j1h5E9GvGhRQXBRhiKLfNLKLVsEUiFt8XoYY3g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "938 Valencia St, San Francisco, CA 94110, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7578211,
+            "lng": -122.4214721
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.75917787989272,
+                "lng": -122.4200013201073
+            },
+            "southwest": {
+                "lat": 37.75647822010728,
+                "lng": -122.4227009798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "65cad86a8022699a6ff59ed8eafa53bfb48ad3ef",
+    "name": "Dolores Street Community Services",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1718,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAQXNMlvre6FNUOX9stnCWGO1W8espA4gc7bcFSmtjKnKoeLF9rL8od91ljMt6PsypZ9zgjSHUoXC7r_z2PlMpsl9G6ziW5h8do2PsvpxGSG3S1cvTotfuesuF7NIQlRs4EhD9ieMaDhi7PbL2U8epnU12GhR3BBRTNpX0soDYlRBwXgrZIny0xg",
+        "width": 2565
+    }],
+    "place_id": "ChIJB4VYHjl-j4ARXGHhnipB0mA",
+    "rating": 4.6,
+    "reference": "CmRbAAAAY1UiA5VfU3KtnInLPuTg9ghaVrnJrhWge7BDv9FOuxKj2ljKSYGA_-DTOVa92z25k7HDr3RhDQRsFcqIHigSkixe7p5tCEw0WxebvWdq7exe8eDV-S6505UWp2y7lKNLEhBnuRLhJsxTIpFJCGKP2ejiGhT58NoGFSnvAvt9qCOwWEEkVQ4o0g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "Haight St, San Francisco, CA 94117, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7700475,
+            "lng": -122.4412174
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77174132989271,
+                "lng": -122.4399383701073
+            },
+            "southwest": {
+                "lat": 37.76904167010727,
+                "lng": -122.4426380298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "d2da8e1d713a530d1607153a9a14337c22406eed",
+    "name": "Homeless Youth Alliance",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "place_id": "ChIJ8-ijrVOHhYARz8TPV1xJHaY",
+    "rating": 5,
+    "reference": "CmRbAAAA8WuIoD2fjzV39p4pkZ-kth452wg7qpilQU__VC7max1IobxnMXmbsKD0YuWNcUBBlKntBNXLNR0h13fYXosKaQZU-VwhOKwHF_G5_0VIzq6fw7x_EuY7zLVIfxX9Tnq3EhCMNNn_ymhOYQ3eqEdYwiI8GhSAYTKwiRBRriDhZfaUM16bl9ngPA",
+    "types": ["health", "point_of_interest", "establishment"]
+}];
+
+var foodData = exports.foodData = [{
+    "formatted_address": "201 8th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7762907,
+            "lng": -122.4112102
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77754517989273,
+                "lng": -122.4099826201073
+            },
+            "southwest": {
+                "lat": 37.77484552010728,
+                "lng": -122.4126822798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7b3277d3876e37db583aa30e87802dac5e8a80b1",
+    "name": "The Sanctuary",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1363,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA6XV06tSyExqu38htUCY0ZFI9g4XgaMXeQrBoY_xol63vzQth6GUXS9X95pRNsXSWF4h8Y4AbGJ8FX-AcY8SzJYquWm4LACcqq3lQhu7_f27B8o09JDwp2sIyhr2jzwZ4EhDgB6au2n3NlTdC9sWY-iLNGhQybSEK_kZdZ4S8Y3o5pSeQpAYbWQ",
+        "width": 2048
+    }],
+    "place_id": "ChIJ7zZq6YKAhYARinpYNFB3AFI",
+    "rating": 3.7,
+    "reference": "CmRbAAAAQ8vDbDlZeDHWKgbKXlnk-jrfoxqVBNpTwXTXF9P6hRdmqzI6iBxYqa-RHkCoS1ntsEzR7MXHcjdeDxclVetCd8JjltV1sylKtkIoNfcgGsIdayf6mCQE4q7kEuiUsR8eEhDi9ET1mdbdATw5RXmWilJEGhQMfzBEPq7B3NI0TOAJcq30N5UR8w",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "25 Van Ness Ave #340, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.775679,
+            "lng": -122.419848
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77705257989272,
+                "lng": -122.4183066701073
+            },
+            "southwest": {
+                "lat": 37.77435292010728,
+                "lng": -122.4210063298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "be1809b58d4df132c004e4896b82b6028328852b",
+    "name": "Project Homeless Connect",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2432,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAGBHK7zE2Mhd3fz04zNgLvzj65VN1WCQiePsyXX0NXITh5DGjfm6b7EvP_8oa6XOKXwSou6FnmbfSbv1MC28TxdXEbf-qy4pSrmCVplG-3PIDdv8xjxU0B3mM2464iRgAEhAqlaZaOYFH2ttir0Am9PA0GhTgQdQUW8TJWCz9vYu_66GeK4PapA",
+        "width": 4320
+    }],
+    "place_id": "ChIJOS1iwJ6AhYARTd9vESZL36Q",
+    "rating": 4.3,
+    "reference": "CmRbAAAAZyinaD9Lbt4XEmK-2earmw0pBMtbA7-h9jBB6H4VkucyOwvwzw5k8SztTPg3qpQ3YQD8heXk_lnR8CMJ7PQODWKhwf00iQhKiT3f3I2Zy4acyb82kVzbT40BdSWXB0AwEhCLUKvvR26if3Apspc-MmTxGhQ_vHmXSxnXOasGNlmFApGftitBmw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "150 Golden Gate Ave, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7821992,
+            "lng": -122.4132137
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78343297989272,
+                "lng": -122.4118405201073
+            },
+            "southwest": {
+                "lat": 37.78073332010727,
+                "lng": -122.4145401798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "1030425d89f0f2dcb54450278c9c3b20819afac1",
+    "name": "St. Anthony Foundation",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 4032,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAu53mIy93XMn7jJ-Kkbgu4x2vBrJz-SDn2XhB_f5XgBJlrWCi6SMa8bL2HQnflnd02ELzf2w0uNmHjrqG6jDY8Qja-Qxobiym9_iGS6XAtrO5_oYgkJuGVYp-lgLNk2ggEhAPnbXX5KLxOduW8Wyc5yIjGhR5HioyBccphibnkKB3wQITN4LnlA",
+        "width": 3024
+    }],
+    "place_id": "ChIJg7PXzpqAhYARakCEWcN4fe8",
+    "rating": 4.6,
+    "reference": "CmRbAAAAse2CRwTddhLNXfTXjl-dFOqlgtDI6sEfV215zrL5BqbxIunWmMJcxyCjWolPylsFfhAHiNmdmZX2ljTK4GBqC5dOEvZGIuxoRic3quxGhezSphxmfKlrTkrJum8XOO9nEhChJ3I4RRpXQ3HuGItWbGWbGhRpXD_J3B3NR4HWORor1NDqDVjNBA",
+    "types": ["health", "food", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "2579 Washington St, San Francisco, CA 94115, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7913061,
+            "lng": -122.435586
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.79272692989272,
+                "lng": -122.4342505701073
+            },
+            "southwest": {
+                "lat": 37.79002727010727,
+                "lng": -122.4369502298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "027866ead2309938e5d163ac781647208cde5722",
+    "name": "Food Runners",
+    "photos": [{
+        "height": 1024,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAvXyNEOso95ZGwEgK6izYB6hfZm1cpqfsW6rVYC9MJZRovyFBWefKhofBKkV41Jw2K1DYejjyk5djiw1WnGRau3OZjph85uUsDOZIMsz6vlIC-iKDmUTsgJK5IXAP2YelEhDD0M4rN6BsNNcBW9ZJRY-1GhTX5ciBx2bqYIO-K8vyczy6P69Yaw",
+        "width": 1024
+    }],
+    "place_id": "ChIJ_____8iAhYARugKUurhIymg",
+    "rating": 5,
+    "reference": "CmRbAAAAAsdymwGYzBd9GvckJtFyqW5edQ4mWUkleCoDR4maCoLT-XVpyNya2bFh7EetGfUm0khmZK-EYmhcraH0GIgRDTyQ-7EwxACDBweqAzZAIz5WTiPGL1Nv1pCblFgbuIUIEhCddW50C115m8AjqVtuAMW6GhRYtqJbSvWiamRGCcOkHdvAAz9Nrw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "330 Ellis St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.785154,
+            "lng": -122.4114072
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78645802989272,
+                "lng": -122.4100478701072
+            },
+            "southwest": {
+                "lat": 37.78375837010728,
+                "lng": -122.4127475298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/worship_general-71.png",
+    "id": "1b6fbbc36f31725082ab78f12a3126c76e013423",
+    "name": "Glide Memorial Church",
+    "photos": [{
+        "height": 1440,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAsSJhsLszfU69J5me8SOw3xxqpS7BU57Epc2CBpp4bnXnHfxxsznjkZwpK2GhXTQse5hxhAp6k2oC3f0oGeiUT32VPNonYA-GjIPa3O4RUqfOQUaG0j_JwSoQuBiET9EVEhD5uu0ChrE67ooJEJAWKzkNGhTEdVlFP781Mmhs7QXkLugUaaOwxQ",
+        "width": 2560
+    }],
+    "place_id": "ChIJgyxx6Y-AhYARxePDEkX8ufc",
+    "rating": 4.4,
+    "reference": "CmRbAAAAegLBegSeneRe7oOYs_XnH1OO6Nq3U_1mDp9_LUi1E4kphgPSbkoWQXXbl3OAyHlcn98QGdZwt7sOmJz12dYkNskgtVWlSkEM2jIV8Ww7IbsQYpYjHmKyvWicmrigZqP-EhAM1_d9QaqcVjryVgTN3DcqGhT7rnOf2W8mpKGwfgeSbGXadpBSdw",
+    "types": ["church", "place_of_worship", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "164 6th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7800629,
+            "lng": -122.4077754
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78145022989273,
+                "lng": -122.4063785701073
+            },
+            "southwest": {
+                "lat": 37.77875057010728,
+                "lng": -122.4090782298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "56a892243bafc62c8847eac9794d9993ec3e7eb9",
+    "name": "Cityteam",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1520,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAMsd-ARBNekePYrrcgIjUtYzeSU2NzAaTgKLCOFercUk7Z9NyJQUKfFvkaXxic00hKX_aNgtBVsZmXuXUxgpLCgKJvEnoEGQIv8VBqlEMPypq6tkEDO2PUTUXN5RSxCF2EhCn1Fj92ZZfBBRvyUoOhzXJGhTN0HFzdC6enz-wZXZg0H9ipifevQ",
+        "width": 2688
+    }],
+    "place_id": "ChIJD6k1-oOAhYARn10_SPzqgzA",
+    "rating": 4.5,
+    "reference": "CmRbAAAAD49CHfe7iabwu07TSCr99cxMN6uuZOpWvVmq8CHXRVi_ad0WTv0QoNASQ6qLHA4KZbqepARvt2Ra4K-48XzgkXmwMxadqItIW1P-LZJfTrbA-khlnDWuVOvUyn5gc0BhEhCYh6je0h6jXWxZ6CtyPzbAGhRsTi1uXVlVT6_hwHFNWMwpHcZg5w",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "165 8th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7807714,
+            "lng": -122.4082152
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78212122989272,
+                "lng": -122.4068653701073
+            },
+            "southwest": {
+                "lat": 37.77942157010728,
+                "lng": -122.4095650298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "d6925b7e99c7fb05e21655d2a15810c92f185d72",
+    "name": "ECS of San Francisco",
+    "photos": [{
+        "height": 465,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAi34Scy3Dqq6novzHVCtcu8jeoj9APQpg9V1WkQSM0BScRCthSUDyHffLNcxZcnJPsU0DGvBo0UhxQi51MhFmdy8hlC63J2GAgeSp7D3uIT7k21MtwzgQL28noguFnIy8EhBsK5U0AwNIPDTbjbAl2_XMGhRJhAPjh6uQij3d_t63TxXEsg_6Cw",
+        "width": 650
+    }],
+    "place_id": "ChIJ5971C4SAhYARQPx6rPElNFo",
+    "reference": "CmRbAAAAl-mBsoQRQjVcdnTMlIJDiAutnRg5kFaFtk5Sl5y5VEbWHYg8Zl4gksawHpc91IBa2IIEqudtBUoM2vYTG_mO8Nhj7bUxxXQ-vRr1kQrgZnd1KraIWctUrCGRgW-n8K8YEhD9JY5gYyjGdPh5FVV_ziZeGhS5sK6ix66agqFnWZ3HmYDDWi1XDg",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "225 Potrero Ave, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7666742,
+            "lng": -122.4073561
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76801397989272,
+                "lng": -122.4061577201073
+            },
+            "southwest": {
+                "lat": 37.76531432010727,
+                "lng": -122.4088573798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "cdc17cad306f6fffb1bb13dd242466ab975bbf58",
+    "name": "Martin de Porres House of Hospitality",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2268,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA54Fmm4P30OLaj8swtCygAPOLpvA207Nvw5jfsp_2CIfCTe27h0yyXk0cPDI8mSaERRZSDOvyNvduEOCUO8XcR36905IakZPWBzvF-HuFoCOarZ6T72W6IjkHjAFPcwS1EhD0AtfAS9nM3KdgXqJZPz_MGhTLHHwlNwCaWB2o8-ZpaF5L8rI_2A",
+        "width": 4032
+    }],
+    "place_id": "ChIJtWyTBi5-j4ARwCuCSsUBDtU",
+    "rating": 4.5,
+    "reference": "CmRbAAAANuxy5zuFaQ-skj8HFGakfDFK79CqzfHDW_cvGH4R8GJuWDrIEvfbW1NujXv1G34K1aKG4M7XizkDQMqyoxBNXprWbMilBQpxku0MaxLcXQL__zBega9o8V21xeqoDzsdEhAQOqg6zcAjqMB3vo_ealHmGhQgLYHHWJFBIa0sMAAKFstHaCDBbQ",
+    "types": ["food", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1001 Polk St, San Francisco, CA 94109, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7861563,
+            "lng": -122.4201283
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78752632989272,
+                "lng": -122.4186215201073
+            },
+            "southwest": {
+                "lat": 37.78482667010728,
+                "lng": -122.4213211798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "3e2a11722365e112abe7db28d6a8118e5806d116",
+    "name": "Next Door Shelter",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1281,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAar7Rlgo08OfOTub7s5zWMYdE8NWMUV3QsmwXbS4U80gmtoH2lsuZdzq2pZPahk7kkTdcVhH59vYMRMJ_dp3VJN51-8QDzEIbkAnL4hQd6Uh44t1o17HjzYgFf6Ybw76tEhAebGawhZwDX9CNRwfydrYLGhTAd4jWYmM-qLfiom9P6Y8PR82X-g",
+        "width": 2048
+    }],
+    "place_id": "ChIJ8UtpopaAhYARl7nz1jUykTE",
+    "rating": 3.1,
+    "reference": "CmRbAAAAIfCnePok_JPv5UyyNJTZE7ZvVwSdY2xiMXtW7zI3TcnYFsu8-ELZrDtlj6NsRwgJ-XgoqsQD4yFDEe7Axu_QrFxikFS4fuGotieE8sqvlGVNhIRuZhF3qINAaAZDTmyvEhD2LoR8L3_0y3c51-MDnNFfGhRvG4tRWyCRhGqNQgi2roz2MrsBFA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "900 Pennsylvania Ave, San Francisco, CA 94107, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7544354,
+            "lng": -122.3935173
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.75580322989273,
+                "lng": -122.3918312201073
+            },
+            "southwest": {
+                "lat": 37.75310357010728,
+                "lng": -122.3945308798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "aca298a0642db3656c19d4199f14fd9ccb6f1224",
+    "name": "San Francisco Food Bank",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2988,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAPUyI8nNC1JRCjTYW_5W5v2m-FtTyIkV5kjmEECnzTp3kDMeamcQkJBsuHJlhh39bUPwtCRM1ny6TzwG2GYIeTlqxTTavvTaW09dAsE60lNiJvF3pQXjDik35nVpldookEhBW8ANuxCtvMFmamoY6wAxUGhQ26VXPje4M3IzILOoLIA675uYh8g",
+        "width": 5312
+    }],
+    "place_id": "ChIJ3c_4HLF_j4ARwP1Exr9tOZU",
+    "rating": 4.7,
+    "reference": "CmRbAAAAzWJf_TZtGcUF_f5HdTde67yI3NOmxF54DtE4VAsX8KLF4X8mZWvcK89Tl-sRI4N6sWIKG6l3Xm-TjGgsYOEgA3WqJB86ewctIHD_os5DfyftWbmpP09D7EXyFzuvgIdXEhB2YdK0MtHpbcHf_x-Rtzi5GhSQ__uI-dDZ5jU_KL5sYcFzaXLcWw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "200 Macdonald Ave, Richmond, CA 94801, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.9354651,
+            "lng": -122.3674698
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.93693537989273,
+                "lng": -122.3661207701073
+            },
+            "southwest": {
+                "lat": 37.93423572010728,
+                "lng": -122.3688204298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "5661c5209a50963a82a3d02004a3b4386a13cc2d",
+    "name": "Bay Area Rescue Mission",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2432,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAIYFxvik6V8ZSevQmWqJ5rds9HIBmBBLoGx4mqUoajgMku9-1zDE6lWBESsrVXl-tFJGZGDETANyXQUufAk_vneJxX4Ftlk8ADfd6soPvSWiMvLSGOL3y5F38pd2BrnJfEhAO0148bS3QA1On-r7S3Tc1GhR4mDlH5HiLO7LtHwWLEuBwmLSAPQ",
+        "width": 4320
+    }],
+    "place_id": "ChIJ93C0AbKChYAR2_J4mdl3KjY",
+    "rating": 2.6,
+    "reference": "CmRbAAAAjgnD0Z1vObls5OYifMrYbb4Ps6-cMDa-YI9nfL3F3RG9EL5fFNlLAKRDY6CXuxEW0SkMC1iuxztACwHbkvqXZ3n2XW4agegfJLDdhlc2MN-FJ0surnKwwJ_Hl_edLMzjEhAfzal2IYM9SKj608atqrRFGhTk5mKGr5mj3LEVvXq1f-fhpz5XdQ",
+    "types": ["church", "place_of_worship", "health", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "525 5th St, San Francisco, CA 94107, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7776669,
+            "lng": -122.399782
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77895432989271,
+                "lng": -122.3985217201073
+            },
+            "southwest": {
+                "lat": 37.77625467010727,
+                "lng": -122.4012213798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "71ce59863a53d8680403aea801a857d5913e039e",
+    "name": "St. Vincent de Paul Society",
+    "opening_hours": {
+        "open_now": true,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1920,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA1hnPykWqcCYsRG0GPlfIV3RYuK-y-0ybPO3tPfE12m-2rVZVaP4nLqPNpkc8rgHDGlmaMF_-mOwxbA7rs68mxug-yUoOdxRatBU8FKW6pvad1x_wgO5Zkgrg5a12poOCEhDHDk07yUavUT4QXLsHanFeGhSmKtMvPfhxBjXpb_h_cs_Ab2LvOg",
+        "width": 1920
+    }],
+    "place_id": "ChIJ0fSwZ9V_j4ARmIEImMHh1f4",
+    "rating": 3.6,
+    "reference": "CmRbAAAAl7RNH2V3iahTH86rdfYNemyfR1VRTq0uCQLFTTbaJ5GkBczYc9I3vT6Co_ONZE5VK18Xo6tzdCN87XgfUTo5VT_XBkreFwDlXWGCZj3rgqsJYypG180DdMU842pSaYW0EhDvSFjEW_aON03Elau1eoY1GhR8zqQKW7uxe2kbsyPUP8w8RVdIzQ",
+    "types": ["store", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1034 Kearny St, San Francisco, CA 94133, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7974611,
+            "lng": -122.4054017
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.79881377989272,
+                "lng": -122.4040289701073
+            },
+            "southwest": {
+                "lat": 37.79611412010728,
+                "lng": -122.4067286298928
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "24086979a34df27ae6c436474c47aed7fda11140",
+    "name": "North Beach Citizens",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 417,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAzyFqwow0MJLajNZWEK1bKg5wmUAwEyKKiU_t4TUHWp7ws464y24PVOw35PmeySabvgkl-QKBgc0ME4BzuIZIlxlKx9hBdoSi8RT8OUTVxaS6CPO-yaymZ9islHH1I_fyEhCdLHiKPjydan0fUApDU1DoGhQG3XdD6JT-3if9P9aU2ynGy_c0AQ",
+        "width": 480
+    }],
+    "place_id": "ChIJYYXfSfCAhYARlSxl8TQt3Qk",
+    "rating": 4.6,
+    "reference": "CmRbAAAAXtkDpey281RYKyTpeFaymuLyPuITaM_oFdYpWIaoCAke2mejBtcuD5g07bnj33l9_RnM1IEeQPX9zh1sc-7itY8YUF8-87xupCquIWhFYIs4G-MXIW17ypTs-lbTV7HBEhCj-7YsdHZp-PkQqevyh65dGhTITZL_Z01ZqLdAfD-AtbXt9goyTg",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "165 Capp St, San Francisco, CA 94110, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.764058,
+            "lng": -122.418312
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76539807989273,
+                "lng": -122.4171123701073
+            },
+            "southwest": {
+                "lat": 37.76269842010728,
+                "lng": -122.4198120298928
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "17119825eda52da890e0cff36f3e10cfc691ac11",
+    "name": "Mission Neighborhood Resource Center",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2576,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAmt6pMH8RkZfe1aYj1w3Z4gEfojwy7l7UjjfMrSCC3pO2GBYa3En_FD0Z4mJ1RpmV-tDBPCJ1Z327H6S5ZqRQDnBi_-273032fTkrPKukTXp_nNqiUovQF0DkfGcVfG8JEhCj-08nCrG6Fvx9F57vIzFVGhRFlVeaqIFK_svyeOxciRo4JGe_Bw",
+        "width": 1932
+    }],
+    "place_id": "ChIJL819YCN-j4ARMVIdUjtxiv0",
+    "rating": 4.1,
+    "reference": "CmRbAAAAOfLQybhEZOJZ5-165LiIeB4VgKhuoDGAcP_nMOhdhYtxX6aKpDWEWV4D9pGp6FZs3ucY7jwI0P9g18zNxt_rKK1eRFLG6rSKOjAYC-mF9LNVYknGMlLdbOKU9AsRxGfnEhDOXzZHtUV5D0jXyVQovO_YGhRrNqXA50EILSokr2IvqUaVLjrZxQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "170 Otis St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7707717,
+            "lng": -122.4208984
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77214087989272,
+                "lng": -122.4192296701073
+            },
+            "southwest": {
+                "lat": 37.76944122010728,
+                "lng": -122.4219293298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7015a234bf753c3bc41c0b7236490c8068410f5d",
+    "name": "San Francisco Human Services Department",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 379,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAHuMhZIRf1v357aqT9_-0dXqWV9dHy8oi0m_tcMO7iNgDHLGPpEYoG5xKnE_j4xkKBcuYHos0lzubgHB7cqFDKe5vW2mX54SuizGoIGxjp2ElLeOYsU1kLn1RKkw3QtwdEhCOqh_aAOYKNgveM3tJ7456GhST6G6sbj-18Gwr4JCT4ync6hruNQ",
+        "width": 512
+    }],
+    "place_id": "ChIJ_ZPg2pyAhYAR6S0aC9xI_1Y",
+    "rating": 4.1,
+    "reference": "CmRbAAAAZSu2VjlrGdYqt289lf8tcGVq48zf0i_yO4SF5sHQSjaIvfmGYXX7RoMDbqIon74I781FOgWMaOoqIlG4f3bcaveHaknpv1-00mMdb5eVhH0wWYIwnnNWLZEtWD-1h3kjEhBfr4A7AJ2zJ1GpKfz6pe3nGhTlSzNA7bUqcbzgbIL9Lfpv1kKPyw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1065 Sutter St, San Francisco, CA 94109, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7879898,
+            "lng": -122.4177223
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78938202989272,
+                "lng": -122.4163810701073
+            },
+            "southwest": {
+                "lat": 37.78668237010727,
+                "lng": -122.4190807298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "e110f39fcf957a4972278b597084fa7cc3ec1540",
+    "name": "Raphael House",
+    "photos": [{
+        "height": 2592,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAsUxb_iPSyPBXOIbe4fKaTUOr3THvfu-pPfXpby2EJjROfVFy8oE8ER4flQNQ4XjtTMyh0I-eee_NHL2T2PiZy8pEnrzUiDLDBSshE2_JThFrFDuPLimHLA1DKwCSiZeTEhD9q09k1K2I6VuxbX2AhxoGGhRSIU3O55yKgVxXsk4QCbFvm8eP8Q",
+        "width": 3872
+    }],
+    "place_id": "ChIJt3uC8pOAhYARVgz1HNWtaxI",
+    "rating": 4.2,
+    "reference": "CmRbAAAAjIroiTqT1MFcWd8Y28SsdP5Kb90mXt8DZCwnki1YaAN-h57KYjbGLdYHmD2A4bEj-QP7q7rKmvMWF4yh5tTwXjGCDpG9pV6ds0LBS_5ybmyOUJnaWnGTSQs31h91a2uSEhCTACLOfX7YdJaBOBS8nwm_GhRryGSXHR3ZHOavCOkT0BFr5foKBA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "38 Mason St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.784003,
+            "lng": -122.4090928
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78534332989271,
+                "lng": -122.4078220201072
+            },
+            "southwest": {
+                "lat": 37.78264367010727,
+                "lng": -122.4105216798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "a5bb0193336d5ca70bc2f07f7b0acf987dc952f2",
+    "name": "At The Crossroads",
+    "place_id": "ChIJw6wsmCF-j4ARTf8gdQdb6jM",
+    "rating": 3.7,
+    "reference": "CmRbAAAAMKb4MxCpEEBgMAL6pHPbXoPeFVBZr5UZq6lc2RnDUTW4nYlgjM9IrxRyCuMd4SFrWCGJpGqvDRRz6RZWxzNRS-3CBcrAPrezmPlLfZl1m3XkA7gSbd2EZuYhaA2Tr39mEhDfRnIPAzaPH1EeyItj3CWjGhTs7F7nf7KPoR6w7nqtfir7o0z7OQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "140 Turk St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.783277,
+            "lng": -122.411442
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78455657989272,
+                "lng": -122.4100782701072
+            },
+            "southwest": {
+                "lat": 37.78185692010728,
+                "lng": -122.4127779298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "9955dc24057565cc0766c3474610953968ad8fa2",
+    "name": "San Francisco City Impact Rescue Mission",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 667,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRZAAAAHJSCmDRjvuEKOQQskKllbz1UU9BukvXLXXmghtsgt9yIKpmeLIOeeo1Bu5H7QvDurevicVBMeTNk8ILac5x_ldbz_yom1TWFaajEVBLdF5G0XEgxUeHuvxS6qZrst8OuEhDP6A1qnmWkYAydwLWnwyFhGhQ4mwnacj1lmzoudZ6Q6xZOZwmgOA",
+        "width": 1000
+    }],
+    "place_id": "ChIJ4zxDRIWAhYARyqKtrpfzFZA",
+    "rating": 4.8,
+    "reference": "CmRbAAAAh3-nV_biHoDO94zPzh5u5Fef-vpjuKJXoDDo6WDz_PxzYWcbZKbY-f3yYPUwxy7xF4FQIJOmHjC-WBTWmFwkLgbqxrjRfSnAXXj_5ByvW0a8tmepcpCYIGK6nhGACxUxEhDvjhjWqnbNQ5JLNaZnXIKmGhTpE7lQrJodH2QBO7B8Lj2bFvayMA",
+    "types": ["food", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1 Avenue Of The Palms #166, San Francisco, CA 94130, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.8172181,
+            "lng": -122.3707037
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.81856792989272,
+                "lng": -122.3693538701072
+            },
+            "southwest": {
+                "lat": 37.81586827010727,
+                "lng": -122.3720535298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "119213caf368532caafa785e4fc54e5a39ebc1b4",
+    "name": "Treasure Island Homeless Development",
+    "photos": [{
+        "height": 805,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAf8qwNHJKFzLJFB0Kg_t-o0NoGpVplJ5lWes2cAHW91AJsAWflgvj1HR2mVFWosylZM4h6lEr_-xLWHvwyGyf2xtkJp5Q_fRP4tzzXG0JhzCUNDlKgOSg9VxzVzTbcrbfEhAOB8kE_jv8keLgrEFKMc26GhQGazjqbEf4j4PDZlVwurGUA-Pk2g",
+        "width": 2048
+    }],
+    "place_id": "ChIJ24cAmDCAhYARW-EZMdJSkWo",
+    "rating": 5,
+    "reference": "CmRbAAAAdJS49Jos98J2Igr2IK1QgRcj_iBffY9W8hRywm3sC3_Jeith0-g2F4HUywAZy9tylXgMN7SwFDAAp2-Q59KJeRrfGLGT8ewtjNuuM7pw4ssCmnb5_g1CbEWhn67Udd8AEhCPu2pDcyqRJjCuyfbQyd5OGhQ97nC65gHruYlTskmMuDU6AFtlnQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "33 Fort Mason 10, San Francisco, CA 94123, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.8043985,
+            "lng": -122.4259557
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.80581177989271,
+                "lng": -122.4246928201073
+            },
+            "southwest": {
+                "lat": 37.80311212010727,
+                "lng": -122.4273924798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "8ae6a093031ef51f0d5eeef85acbdd8b13e76b8b",
+    "name": "A Home Away From Homelessness",
+    "place_id": "ChIJLcf5896AhYARoVVqsxlE8VM",
+    "reference": "CmRbAAAAR2NtxlE4k4jX_CpAIoVYRQCNWUBH5wNM51-1U6sbWmsqZDSpHIdXv42KFJcSezcKMnd6jLMkTXvjLC8nxy-_AN4qBw0eNYtulYx8ARwZqgQUCNXQz6i6skMccJldiytJEhDuDKKjFD_0NVMIQ0-qT_yyGhTZuBnumrgi9WxadJWwWUNlrEzoXQ",
+    "types": ["point_of_interest", "establishment"]
+}];
+
+var clinicData = exports.clinicData = [{
+    "formatted_address": "2720 Taylor St #430, San Francisco, CA 94133, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.807569,
+            "lng": -122.415534
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.80890882989273,
+                "lng": -122.4142634201073
+            },
+            "southwest": {
+                "lat": 37.80620917010729,
+                "lng": -122.4169630798928
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "410623be747f43c1ee71d14dbd67cfe18b988af6",
+    "name": "San Francisco Community Clinic Consortium",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "place_id": "ChIJc6yuCS9-j4ARKxi5RhFYJs4",
+    "rating": 5,
+    "reference": "CmRbAAAAk-3QbhGEyTlHWNF2ioW8GrFZ_H0hDPBGFkKjmGgABklP93yhis9in2rhwkY02niiBAhIA7GyWPfCKAO9JAmKW_oMKF97LLBI5fKF6echgH6kwbn_20_taoh_gB-4g3KeEhBHo-NgpzIYc7Zn4oRszfMsGhRnIxuVgwaIjiPDH1FVyOEe6OFhVw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "230 Golden Gate Ave, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7819853,
+            "lng": -122.4143343
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78325362989272,
+                "lng": -122.4129673201073
+            },
+            "southwest": {
+                "lat": 37.78055397010728,
+                "lng": -122.4156669798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "556d107958214241c760028185b5923a0d671926",
+    "name": "Tom Waddell Health Center",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 4160,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAA0wHgdUyp3d8blC5vw-cvOXAQJxF_1vgjq_HKmxw4uuN4jjCP8xWaAfMvgOTW59EGNZzABAfbjD564wVQ-I-GWNS7BECfpEYJc3h-5SztDVnGJ0fjkEve8-7o9RIAIhPCEhAgcaeHE3W_uMyX2RT-lEsiGhRd6riArIoV7oFQJ5CR80CD9Pv9qw",
+        "width": 3120
+    }],
+    "place_id": "ChIJo42d65qAhYARtLMRp9uRjqI",
+    "rating": 2.8,
+    "reference": "CmRbAAAAuKo3POkiwQ2u8GzUpfCOuuAM3yJuf5Kz1iRPHKo7IN5HGOBYuyrbpyKJd9I4LyyOG2mELxsfFbxGL4RTHFZkpFkZzIV4f5EKJ4C9l5VL-je_lhZzuR6VOxCuHpJIk4N2EhDTManLi9RRciqAtxysppKkGhR_WeNX2jYaYw59Q63QiXvGr15fpQ",
+    "types": ["health", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "472 Turk St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7827062,
+            "lng": -122.4169102
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78392792989272,
+                "lng": -122.4155346701073
+            },
+            "southwest": {
+                "lat": 37.78122827010728,
+                "lng": -122.4182343298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "c19253c9c9b894b04a1267945244e3c1b7000cc5",
+    "name": "Tenderloin Housing Clinic",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "place_id": "ChIJGZYgdZqAhYARBPlX_drraA4",
+    "rating": 2.9,
+    "reference": "CmRbAAAARkTsd1YYZ91ya2a_w1ewWAQHrVs2gPU2EzJiKl8krVHdw86reI7UCQMEpSyEcvODMG6IJPkp3OZ3Cq7zXgYOpaHq30tAXtuJAzW-3DwwJkB7HNUabllrbt8C_9Z9XvtPEhCFJ0BWNAvh_4TyXzTJx8c9GhSAS5rnsBDbCMbdpTOSiF4fy75bfA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "2500 18th St, San Francisco, CA 94110, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.762197,
+            "lng": -122.407562
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76341332989272,
+                "lng": -122.4062001201073
+            },
+            "southwest": {
+                "lat": 37.76071367010728,
+                "lng": -122.4088997798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "de2d08ff05f444b732ee54044377c538765aa187",
+    "name": "Homeless Prenatal Program",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "place_id": "ChIJL8WyWzF-j4AROGCX3zwFw_I",
+    "rating": 4,
+    "reference": "CmRbAAAAMCliOdKLWKc-J1E9-V20bOaC-CL1f1x8npvUp-aBP9VMmJUhRZqqdVPNH7cBstwbQmkz-UbPlkqyzTQTP1cHY3vjFDA_v8g2Lw3-lTmS4AdHXVs3A6kUXlMfBH4ratNeEhDOI8MlWmv_D4nJJZxCFetYGhR31YRf5EK9iZ6FwhEAF8Z51vthTA",
+    "types": ["health", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "134 Golden Gate Ave, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7822605,
+            "lng": -122.4130207
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78347622989272,
+                "lng": -122.4116438701073
+            },
+            "southwest": {
+                "lat": 37.78077657010728,
+                "lng": -122.4143435298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/school-71.png",
+    "id": "e60681ef5434e53955828f13672d8ac0bee6aa07",
+    "name": "Larkin Street Youth Services",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 315,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAEo1PjQa1n7emJHKlG5EvegBKLU0Mgd6vXvqIFoFk-oHr_SsSpFdqcIi1yx1zi0XNCfPWISMuO80smdsipbgBxgEPpXPMcA4Ptsxu-t6KvhueE0084zuZbSGt2aAZk-OaEhA5tlxPqJVDSuf_hjNsStSoGhSTOHTcd-RoTyOGQ0HESR9XaYp7RA",
+        "width": 851
+    }],
+    "place_id": "ChIJT4DOLmv3MhUROXgQo9IKcHg",
+    "rating": 4,
+    "reference": "CmRbAAAAeWLe9wdnqsfCiBEWqdtlMpkl7fewb_5QzRVJ6infK39mxToxNtbw7I8iTv_p3zIN3UD599A5Q1v1opE6wrxj4diM09-HRlAzuBWImJVXZjYREks_6oodCtUHZNjQfQxxEhD3TaowNjaf2qTTzDcX5TJ3GhS11sIFW5s5rj6LflwDzFaBHFAqVQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "164 6th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7800629,
+            "lng": -122.4077754
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78145022989273,
+                "lng": -122.4063785701073
+            },
+            "southwest": {
+                "lat": 37.77875057010728,
+                "lng": -122.4090782298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "56a892243bafc62c8847eac9794d9993ec3e7eb9",
+    "name": "Cityteam",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1520,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAXHcKMCZln9qPSoj2u4w8s9mskn-cOVOefnau15cFQUt2Jum5xYHSaQV84tUZqg8Bi032ZMRQUzj1j8BiiGeopwwGPZGpsEVaHMDw7HFZDl-y_Vi5sZX0A3iVaBIXSDyuEhCaP7i2Q78qjfhLesewguRhGhToyTzUP9e_yD65gWLpPUBvSNCYVg",
+        "width": 2688
+    }],
+    "place_id": "ChIJD6k1-oOAhYARn10_SPzqgzA",
+    "rating": 4.5,
+    "reference": "CmRbAAAAINZZwYoLLX7VB81VvmoIRFYsIjHklm6BOcpkY6-saTnx4q3vZ-jWUjOhR6RIC2FbBj9p_nHU8Yma9DvP1cmjI8IvZxng2VjoPJ6tqWdR4vAgRKyk4yO2FRsYbBlEERR-EhCpBXIBZld1_S8yrMzQGT_SGhSZknNErtOIntIlafknBxfVqAS2vQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "401 3rd St, San Francisco, CA 94107, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7824348,
+            "lng": -122.3969592
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78372697989272,
+                "lng": -122.3956806201073
+            },
+            "southwest": {
+                "lat": 37.78102732010728,
+                "lng": -122.3983802798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "95a0634d858e722449b24f24283912c3ea82ff69",
+    "name": "San Francisco VA Downtown Clinic",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 3024,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAZ2fCw_z9_0l_3CWy7OIEIlbclBOnlNics0lQtp0OpOpdN7tNJMMuQ-LHUz7IueiRwUihoE9sE5CjNs1o2vXaj3KJTWtVHbO6ukgge5P6t9OcSZtNCljvHS14yuGteLU9EhBWbwkcEEhXUoaxcw4s-2soGhTGkiHW4e78k13HhG1S3WX58_Rh3w",
+        "width": 4032
+    }],
+    "place_id": "ChIJ4bVvwH6AhYAR0gPWLUwh-AQ",
+    "rating": 3,
+    "reference": "CmRbAAAAjGZqRATHcPDQ8DegN0Ru08uKE3oIjiJT0rU33ZrtV-5hY8Rd-qGvSe3LyUX7g-501M4kwtrQlku8yvaVLoGl1_NcG-EuUWnH_4v5oeTdB9CEC27wiLFtxBc7bT6sIFazEhA3DdEDji3L2wdopqijM07_GhToTkN3B86-umYSVO_2ZH_ggWKgJg",
+    "types": ["health", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "49 Powell St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7852426,
+            "lng": -122.4080899
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78660922989273,
+                "lng": -122.4066063701073
+            },
+            "southwest": {
+                "lat": 37.78390957010728,
+                "lng": -122.4093060298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "c558f0bc2f2c5b1d3984c824703e57d97872a1fb",
+    "name": "Compass Family Services",
+    "photos": [{
+        "height": 750,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAzVnMyBLyU4psRSqbTPYfdoGm7e1y4anCelMDeElMyrw6D1aljs6OkPrF1OXhr-ZMtacmyUVwAGlEzadzS4SLdxPhptuZrWMa7JRtDYFQQ-tASR-uCqnW-xRAtlb2GVCNEhB9uk1X4WK0rk5xRY64tb-xGhTIoJJ_OwfzL_ecZi1ywC9Q8jbpug",
+        "width": 750
+    }],
+    "place_id": "ChIJrzICWI-AhYARikIbwnzIPC4",
+    "reference": "CmRbAAAAb9VqJV4C-p87_apLqQQsBgDb9RloTLBVHNB2tC19f9VoKEPjtj26yd7qUeuIPhF1-nrlHC4iCONA2So2qiotl8fAnYE9gaVbcc8rpOPDASAxZ13pNjxIvJBRUsfKsrtDEhDORdTE8ujS7f5j6N0Lqs1-GhSFL4c2feRiZ2KArx5qftqYZPCMaw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "165 Capp St, San Francisco, CA 94110, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.764058,
+            "lng": -122.418312
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76539807989273,
+                "lng": -122.4171123701073
+            },
+            "southwest": {
+                "lat": 37.76269842010728,
+                "lng": -122.4198120298928
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "17119825eda52da890e0cff36f3e10cfc691ac11",
+    "name": "Mission Neighborhood Resource Center",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2576,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAZnof6iBG_PKAqfLn9iIZKYI-jJTEWW3Alrt8VdVHVVyXfEl5Qp1aTWOqta3ZxstfLHQzDEIVid1dMasGcPTnbJoWb2dOT3bs1W3s1HkeXWdWNa4uDqEfbYQ2f8E6R4x_EhAII_BAupF0ptaBm-oscsoTGhTcaassR4e7ExXQE6vy6XJBXbiTag",
+        "width": 1932
+    }],
+    "place_id": "ChIJL819YCN-j4ARMVIdUjtxiv0",
+    "rating": 4.1,
+    "reference": "CmRbAAAAWUSopDFPBAVjZzrt3hfEGT2NFgRVtY98s7EtG8DnGjcxCg8yDmd6uLbG1hdCjcqloIrzqGFsckLfDMU6PW2BYbT2lwLU9obOR3-f71v0YTz8k8iH42OPuGM5NmWgl28gEhBVKMm0-jATyVJa2FuqXC5sGhT77-iexb2UxnA-ULE-tNgXtw5lBw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "525 5th St, San Francisco, CA 94107, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7777275,
+            "lng": -122.3997819
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77899552989273,
+                "lng": -122.3985347201073
+            },
+            "southwest": {
+                "lat": 37.77629587010728,
+                "lng": -122.4012343798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "80d513e57342bf35939df3ebecba29804ac5426e",
+    "name": "MSC Homeless Shelter",
+    "opening_hours": {
+        "open_now": true,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 4032,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAlVgDHtQRyip__ntlLoEInJQlICkWGpHoMjiONWi3590MHF3Qh7DXW4KFg-nI6VHHQ0v6Ch15nVACrb7zmTrh7K2VqwLwfe0dG56p3XZR-ac4l5lqluhC8Ox7is5zv6qIEhAKngGLNXbN7C4w2uyRQbeOGhQl2tQSMLOd2CLBFyQG6GtJ8HGvxA",
+        "width": 3024
+    }],
+    "place_id": "ChIJyTdZXtV_j4AR5QrKZR9GO0k",
+    "rating": 2.9,
+    "reference": "CmRbAAAA8BQR2QUxtlal1-1Qo__fUDoJkjFs6asnXtM2oSOkySBcjcRsq7JXTqDg3GSRwyTRUMbVXfXLbyzlZocq9jZwOBj4dXY6LIqUwulyELHfvdxqpZdPqfAp-znJrLq6Ipg1EhA9WT1J6p-wl12LTsnOvMt8GhQMK4HWCqb5gCIua3bpLgU9DPEPxQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "2791 16th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7651155,
+            "lng": -122.4149993
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76658212989273,
+                "lng": -122.4136607201073
+            },
+            "southwest": {
+                "lat": 37.76388247010728,
+                "lng": -122.4163603798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "01ea3c34b447e2688d260ffbb3e9a4cc294fff27",
+    "name": "Tenderloin Housing Clinic Inc",
+    "place_id": "ChIJwbbzFyV-j4AR-pffkcVXfpo",
+    "reference": "CmRbAAAAgjfyiZhkL3OiE4m560P6bXgAE15FYA5Ci-bt2y4CM2RbiT_XZ_ZoJKRjCfKyImQbxjCqG5BOmM55nNNXbCAVbSTIzwoC6w3NvB-1ZsehJw2i52GJA-A8YPXON8nl4HB4EhDts2vcEF4z6XG_BVq0LfqyGhRUlrgtgczW77528nIdoyFf_VdZ9g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "25 Van Ness Ave #340, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.775679,
+            "lng": -122.419848
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77705257989272,
+                "lng": -122.4183066701073
+            },
+            "southwest": {
+                "lat": 37.77435292010728,
+                "lng": -122.4210063298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "be1809b58d4df132c004e4896b82b6028328852b",
+    "name": "Project Homeless Connect",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 2432,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAV5nPwviI_G9HLvXFCiBo4KpiVsk12XTcyNxpYnDaLsQS-3MrlUHZO3588XEP5P6HPZDd5uXUfW4TYPZTUvGwSVtbpNOaSqu9-UeG855IuL8zfSZ2c4UUyal26ato6MmTEhAOMkFpOO6A2YqHFY6uvedlGhT9iAv6ee9iJ_datLoPks1EzeBqxA",
+        "width": 4320
+    }],
+    "place_id": "ChIJOS1iwJ6AhYARTd9vESZL36Q",
+    "rating": 4.3,
+    "reference": "CmRbAAAAtvtdSMhFn3wIzUTvBEnjTVZJW9Swh2JGu3Xv4DN_Xcf-ucfLgX0-EMa6ochq6kt6ab53SglyGSLJeUtfzMQ093hILu0PtdVfiNc7ig8WYwXG9u7ymPyUrS9uM8nSdaFCEhDgRhvl-p_X8TPqYyByq2ZPGhSWr-Bo1GkmSG8HQDEc9O5NirrvWA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "201 8th St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7762907,
+            "lng": -122.4112102
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77754517989273,
+                "lng": -122.4099826201073
+            },
+            "southwest": {
+                "lat": 37.77484552010728,
+                "lng": -122.4126822798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7b3277d3876e37db583aa30e87802dac5e8a80b1",
+    "name": "The Sanctuary",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 1363,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAD48hgzs4hZfhDILM2WuG3vhD7iiZmtyA_Na1PVegof0SIdG0T8YWCVfoGt40e-FUCfOKvms9RSIABZUkAPkGbXWb4G2KUprTg8K9N2cAvPo9K3w1JCFOVJTOnIyzjR6pEhBIKJJmeoQ0jRtpNL5OustDGhSVngI1XRQ3SVS1auLI17t03UidIA",
+        "width": 2048
+    }],
+    "place_id": "ChIJ7zZq6YKAhYARinpYNFB3AFI",
+    "rating": 3.7,
+    "reference": "CmRbAAAALpTOawq3fqkF0nvWu9nYubEs3luJb5iCpkSQH0GnDDB5F_06UD3y8-lBV8WEhiK9DbA6YKLNPFJSHq4iQWcvpfgvBYKSSSeZVdNUUPAWGT6hZuCut8cttVnv31aBM_TmEhDVk_qVq3u062zBxshCfBeZGhSe8K4OkkvSC87yo2V2ouZ5Rr1UUA",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "260 Golden Gate Ave, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.781966,
+            "lng": -122.415002
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78320282989272,
+                "lng": -122.4136317201073
+            },
+            "southwest": {
+                "lat": 37.78050317010728,
+                "lng": -122.4163313798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "97a00e8602ed5e130730a9b49a7e2f2a1879ee36",
+    "name": "Hamilton Families | Hamilton Shelter Program",
+    "photos": [{
+        "height": 1153,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAkHg5xCSv_FLnAIVogRbFsQk1oXh-qD6ZfE9DUIc8VS4m9lGiI1K6XUFkbDownaN_VcFrIrb57_dE1Q3sJTpZqdnP7_gNR3peuc5LCIyBSr_yl2wCGOqXaE0tkm6awSlQEhD4t5ZWeNOzWkd4tFsM7rNrGhTDaFf8m1f3axSWjnpyW7RemLUu2Q",
+        "width": 2048
+    }],
+    "place_id": "ChIJBZ2-jZqAhYARF3HDeoypWYk",
+    "rating": 3.5,
+    "reference": "CmRbAAAAXPX6NArLkgjTJHqfgGReL0SO438OvFLSn_qgKEelRTSEOiyR-fRUT5SyNu4hQ0AvAS0dEOFvY7p5ot__cMgByRD5K3KloMba7A9h2U8go0vHj4OaQYRGdwAVxQPe4BUnEhDxNP6_jWKGeh8yGcEZu-YmGhT94HfqJyGW94Ijf3ZS0l_5ETYv9w",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1251 2nd Ave, San Francisco, CA 94122, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7651717,
+            "lng": -122.4591005
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76652662989272,
+                "lng": -122.4576490701072
+            },
+            "southwest": {
+                "lat": 37.76382697010728,
+                "lng": -122.4603487298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/school-71.png",
+    "id": "a593d7e0f7bb5eb38a783f739e4cc8f1bf373985",
+    "name": "Larkin Street Youth Services",
+    "place_id": "ChIJ-ZVLGlqHhYARFQAnevxUgH4",
+    "reference": "CmRbAAAAYsNXFxmqD-fqMd2PIG43j0s2UMqFnVKhAnVE6b9WCYbvlstKcflJST13j1Tf1RBhwCpZ0P29R35vsYEySTbOf3ZTGZR8gSwEoBVV4ejaLeKA1qWR6C-OgTVEttnAK6PgEhBBwBCy1wOtEyxRHbVhpJxPGhQcMhsA8nrLPZ6GWVZZHHkWOsPg5g",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "25 Van Ness Ave Suite 340, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7789943,
+            "lng": -122.4199674
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78034812989272,
+                "lng": -122.4185860201073
+            },
+            "southwest": {
+                "lat": 37.77764847010727,
+                "lng": -122.4212856798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7112f68e9aff201be9e430a60f05c4a803a0e2f7",
+    "name": "Project Homeless Connect",
+    "place_id": "ChIJHVryCpmAhYARyDNdaALPfn8",
+    "reference": "CmRbAAAADIYC9vM6FHXyNssGdemC-nCAbjhTKwZGtmAo32WwmEQES0S57K2D4ZyW8HsKhiIPX06z3ZISpB8eZ8J5cSPOluU35UYdnTOba3w1YciJEVggW6DVKw0m2a1Sn8_NRFN_EhD8pjDS_zI9rbqJ6AtNSOokGhRsCA6NocFJKNmR9VDH6xXwLEbDSg",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "1950 Mission St, San Francisco, CA 94103, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.76578140000001,
+            "lng": -122.4198681
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76713422989273,
+                "lng": -122.4184682201072
+            },
+            "southwest": {
+                "lat": 37.76443457010729,
+                "lng": -122.4211678798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "6b5aa3544d962ddf6bda437bf2491fe0c8befa43",
+    "name": "Navigation Center",
+    "photos": [{
+        "height": 2592,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAYqUym-T-Lh6OKOR2_JHnQHnlTZY-V-ht14yEt9A99Er2rCS3tRxKsC8LAoDFdJXj-UoI9-xurHnoGEaNmblpt0ONqGLPUwGwKG5dfxiAZPawvOskVfAKNXPHPFLuS9jUEhDc3TrkdcMQz3IkV_G40U0KGhRgK7rm7E_EbWQGujCBrJiOBIDClg",
+        "width": 1944
+    }],
+    "place_id": "ChIJfQ8YviN-j4ARJVDRHBhhx_E",
+    "rating": 3.5,
+    "reference": "CmRbAAAAYV5yQ9bMPjOONwhSnU_UnirIKRTbcml9WA29G7vwQjP1G8l4qtjvnN4Pdj27Q_vP4qEw4HQiJ0KarMK8F2NSWMTpj7LaWxIhXz81I4BZlFhexNV7RKEgVDUZTtlM9q4DEhAjgwmPhYmftBRVffTNu6j-GhRq3kxCrj6o4iE4Oca4qlWh6f2VGw",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "536 Central Ave, San Francisco, CA 94117, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.77472849999999,
+            "lng": -122.4442832
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.77606267989272,
+                "lng": -122.4430576201073
+            },
+            "southwest": {
+                "lat": 37.77336302010728,
+                "lng": -122.4457572798928
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/school-71.png",
+    "id": "ad2ee7e9b5e91888d70564438dc601252caf9f4e",
+    "name": "Larkin Street Youth",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 3264,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAoHJSPId6ozWxZRyp9cj9iMHuKtJ2b7ncsTnQUBc6V2dw2-sB1wJSQhNxpxt6ofTqy7WI0_kjpEaumdvojEGyAQ_onT5d-Olq6lpsehiiyn9YRMImVXTwFLMD1ZfgN7-YEhCnizYjYCULUTs7xQn6XFWPGhSwv50sNoNjqwEpbvE0uQqn9yCC4Q",
+        "width": 2448
+    }],
+    "place_id": "ChIJi__TiLKAhYARrOKMZzenK_s",
+    "reference": "CmRbAAAA_vz4dAUqbBOKKM-UctG2jClBVW4scE0C3hL7nUfgzruV7YUd7_hdU3plWEP8DLdzb-9O0VohywEQesWvOp8s8noaOgOAUrEB5T6o75ud9pwbKTBgJcQLo0Cicd2vpRQbEhD2fWXXkP0e1BAHweoenSqvGhSAFXrjRHMe6aNMeWJA8MKf379lUQ",
+    "types": ["point_of_interest", "establishment"]
+}, {
+    "formatted_address": "330 Ellis St, San Francisco, CA 94102, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7852271,
+            "lng": -122.4114442
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.78649322989273,
+                "lng": -122.4100769701073
+            },
+            "southwest": {
+                "lat": 37.78379357010729,
+                "lng": -122.4127766298927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/generic_business-71.png",
+    "id": "7d81de8e67dab4b5a0c499f623c3d49a3b718568",
+    "name": "Tenderloin Health Services",
+    "opening_hours": {
+        "open_now": false,
+        "weekday_text": []
+    },
+    "photos": [{
+        "height": 874,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAzXmz85Uu1ppCwOwq3aLBhS6MDPYIxkTnLAd4yW9VE-uiaaM9YDGbkkb_v9krjanhi2sSwMe5eX8T8o9K0xAkYQNXrJR6PfWrW1kz31moR1mC2WSbXAa_vhIc9a0IIaaEEhCoIxRHaMDZHsvpu3JSQb6yGhRnDF54HSfjfTRjY9ZyuiqLcCK7HQ",
+        "width": 628
+    }],
+    "place_id": "ChIJgyxx6Y-AhYARYSoDy1sGL3I",
+    "rating": 3.7,
+    "reference": "CmRbAAAAozYpYzcct2_-_BGWmxiSm-aizRTaCvfpxN-sXKG5yefGnqkhEF1Nw0b1RozXvxqOdUi-DI1WMETVC9K0LPCagJTQZDcz6-L_U9xlcDKDzgilf2DhoEbbzeYaOev71al0EhBiCdC5c5KoOyfghCcPOiLxGhRlG5fGlFHrID3XSg93tRnf_gcUdw",
+    "types": ["health", "point_of_interest", "establishment"]
+}, {
+    "formatted_address": "505 Parnassus Ave, San Francisco, CA 94143, USA",
+    "geometry": {
+        "location": {
+            "lat": 37.7631333,
+            "lng": -122.4575489
+        },
+        "viewport": {
+            "northeast": {
+                "lat": 37.76460987989272,
+                "lng": -122.4565325201073
+            },
+            "southwest": {
+                "lat": 37.76191022010727,
+                "lng": -122.4592321798927
+            }
+        }
+    },
+    "icon": "https://maps.gstatic.com/mapfiles/place_api/icons/school-71.png",
+    "id": "a9c28b86d16ecacd2569aac9eb3474505b8ab220",
+    "name": "UC San Francisco",
+    "photos": [{
+        "height": 3456,
+        "html_attributions": ["Photos are copyrighted by their owners"],
+        "photo_reference": "CmRaAAAAcsJvwx4ZFL7EAxxQMRdybWpZ5623QClC0ElB6YiB8oNJWxhw8cpUXWJ-ozXvqlDAzgHdoyDArBF6pYQMBg5bZ5mSC6q3AucNZIFmYFKkClu9QpeeD840oed6DYtHNrd0EhCyBL0XMfzf6Rg9dbA3sPbvGhQ0AA3nCwZghDp1VRmz4ST0tm21dw",
+        "width": 4608
+    }],
+    "place_id": "ChIJYxVpxFmHhYARVSKbL2FJ6VY",
+    "rating": 4.3,
+    "reference": "CmRbAAAA4pajkz-bYlFpdhIDSznUdKcR4KGQbxshFXX58ZTcHtIVL4Wr8jStxOYDR38tsFEN9sLO8Za9KUp8dVfBgaNzocCIMBMrA3p62nS9aBjD0nihwDGi7qWJSf6xCgZqLZOqEhBLnmSUCZ-7Et8WCF_wrfjjGhS1HYHL9ccjrQaGLN9IjhNXLU6-YQ",
+    "types": ["university", "point_of_interest", "establishment"]
+}];
+
+/***/ }),
 /* 440 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45593,9 +54052,106 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(26);
 
-var _about = __webpack_require__(441);
+var _contact = __webpack_require__(441);
+
+var _contact2 = _interopRequireDefault(_contact);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {};
+};
+
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+  return {};
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(_contact2.default);
+
+/***/ }),
+/* 441 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(0);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Contact = function (_React$Component) {
+  _inherits(Contact, _React$Component);
+
+  function Contact(props) {
+    _classCallCheck(this, Contact);
+
+    return _possibleConstructorReturn(this, (Contact.__proto__ || Object.getPrototypeOf(Contact)).call(this, props));
+  }
+
+  _createClass(Contact, [{
+    key: "render",
+    value: function render() {
+      return _react2.default.createElement(
+        "div",
+        { id: "contact" },
+        _react2.default.createElement(
+          "h2",
+          null,
+          "Contact Us"
+        ),
+        _react2.default.createElement(
+          "form",
+          _defineProperty({ className: "contact-form", action: "POST" }, "action", "https://formspree.io/trwong93@gmail.com"),
+          _react2.default.createElement("input", { type: "hidden", name: "_subject", value: "Contact request from Link website" }),
+          _react2.default.createElement("input", { type: "email", name: "_replyto", placeholder: "Your email", required: true }),
+          _react2.default.createElement("textarea", { name: "", id: "message", placeholder: "Your message", required: true }),
+          _react2.default.createElement(
+            "button",
+            { type: "submit" },
+            "Send"
+          )
+        )
+      );
+    }
+  }]);
+
+  return Contact;
+}(_react2.default.Component);
+
+exports.default = Contact;
+
+/***/ }),
+/* 442 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _reactRedux = __webpack_require__(26);
+
+var _about = __webpack_require__(443);
 
 var _about2 = _interopRequireDefault(_about);
 
@@ -45612,7 +54168,7 @@ var mapDispatchToProps = function mapDispatchToProps(dispatch) {
 exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(_about2.default);
 
 /***/ }),
-/* 441 */
+/* 443 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45782,7 +54338,7 @@ var SampleInputs = function (_React$Component) {
 exports.default = SampleInputs;
 
 /***/ }),
-/* 442 */
+/* 444 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45794,15 +54350,15 @@ Object.defineProperty(exports, "__esModule", {
 
 var _redux = __webpack_require__(70);
 
-var _reduxThunk = __webpack_require__(443);
+var _reduxThunk = __webpack_require__(445);
 
 var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
-var _reduxLogger = __webpack_require__(444);
+var _reduxLogger = __webpack_require__(446);
 
 var _reduxLogger2 = _interopRequireDefault(_reduxLogger);
 
-var _root_reducer = __webpack_require__(445);
+var _root_reducer = __webpack_require__(447);
 
 var _root_reducer2 = _interopRequireDefault(_root_reducer);
 
@@ -45816,7 +54372,7 @@ var configureStore = function configureStore() {
 exports.default = configureStore;
 
 /***/ }),
-/* 443 */
+/* 445 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45845,7 +54401,7 @@ thunk.withExtraArgument = createThunkMiddleware;
 exports['default'] = thunk;
 
 /***/ }),
-/* 444 */
+/* 446 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {!function(e,t){ true?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t(e.reduxLogger=e.reduxLogger||{})}(this,function(e){"use strict";function t(e,t){e.super_=t,e.prototype=Object.create(t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}})}function r(e,t){Object.defineProperty(this,"kind",{value:e,enumerable:!0}),t&&t.length&&Object.defineProperty(this,"path",{value:t,enumerable:!0})}function n(e,t,r){n.super_.call(this,"E",e),Object.defineProperty(this,"lhs",{value:t,enumerable:!0}),Object.defineProperty(this,"rhs",{value:r,enumerable:!0})}function o(e,t){o.super_.call(this,"N",e),Object.defineProperty(this,"rhs",{value:t,enumerable:!0})}function i(e,t){i.super_.call(this,"D",e),Object.defineProperty(this,"lhs",{value:t,enumerable:!0})}function a(e,t,r){a.super_.call(this,"A",e),Object.defineProperty(this,"index",{value:t,enumerable:!0}),Object.defineProperty(this,"item",{value:r,enumerable:!0})}function f(e,t,r){var n=e.slice((r||t)+1||e.length);return e.length=t<0?e.length+t:t,e.push.apply(e,n),e}function u(e){var t="undefined"==typeof e?"undefined":N(e);return"object"!==t?t:e===Math?"math":null===e?"null":Array.isArray(e)?"array":"[object Date]"===Object.prototype.toString.call(e)?"date":"function"==typeof e.toString&&/^\/.*\//.test(e.toString())?"regexp":"object"}function l(e,t,r,c,s,d,p){s=s||[],p=p||[];var g=s.slice(0);if("undefined"!=typeof d){if(c){if("function"==typeof c&&c(g,d))return;if("object"===("undefined"==typeof c?"undefined":N(c))){if(c.prefilter&&c.prefilter(g,d))return;if(c.normalize){var h=c.normalize(g,d,e,t);h&&(e=h[0],t=h[1])}}}g.push(d)}"regexp"===u(e)&&"regexp"===u(t)&&(e=e.toString(),t=t.toString());var y="undefined"==typeof e?"undefined":N(e),v="undefined"==typeof t?"undefined":N(t),b="undefined"!==y||p&&p[p.length-1].lhs&&p[p.length-1].lhs.hasOwnProperty(d),m="undefined"!==v||p&&p[p.length-1].rhs&&p[p.length-1].rhs.hasOwnProperty(d);if(!b&&m)r(new o(g,t));else if(!m&&b)r(new i(g,e));else if(u(e)!==u(t))r(new n(g,e,t));else if("date"===u(e)&&e-t!==0)r(new n(g,e,t));else if("object"===y&&null!==e&&null!==t)if(p.filter(function(t){return t.lhs===e}).length)e!==t&&r(new n(g,e,t));else{if(p.push({lhs:e,rhs:t}),Array.isArray(e)){var w;e.length;for(w=0;w<e.length;w++)w>=t.length?r(new a(g,w,new i(void 0,e[w]))):l(e[w],t[w],r,c,g,w,p);for(;w<t.length;)r(new a(g,w,new o(void 0,t[w++])))}else{var x=Object.keys(e),S=Object.keys(t);x.forEach(function(n,o){var i=S.indexOf(n);i>=0?(l(e[n],t[n],r,c,g,n,p),S=f(S,i)):l(e[n],void 0,r,c,g,n,p)}),S.forEach(function(e){l(void 0,t[e],r,c,g,e,p)})}p.length=p.length-1}else e!==t&&("number"===y&&isNaN(e)&&isNaN(t)||r(new n(g,e,t)))}function c(e,t,r,n){return n=n||[],l(e,t,function(e){e&&n.push(e)},r),n.length?n:void 0}function s(e,t,r){if(r.path&&r.path.length){var n,o=e[t],i=r.path.length-1;for(n=0;n<i;n++)o=o[r.path[n]];switch(r.kind){case"A":s(o[r.path[n]],r.index,r.item);break;case"D":delete o[r.path[n]];break;case"E":case"N":o[r.path[n]]=r.rhs}}else switch(r.kind){case"A":s(e[t],r.index,r.item);break;case"D":e=f(e,t);break;case"E":case"N":e[t]=r.rhs}return e}function d(e,t,r){if(e&&t&&r&&r.kind){for(var n=e,o=-1,i=r.path?r.path.length-1:0;++o<i;)"undefined"==typeof n[r.path[o]]&&(n[r.path[o]]="number"==typeof r.path[o]?[]:{}),n=n[r.path[o]];switch(r.kind){case"A":s(r.path?n[r.path[o]]:n,r.index,r.item);break;case"D":delete n[r.path[o]];break;case"E":case"N":n[r.path[o]]=r.rhs}}}function p(e,t,r){if(r.path&&r.path.length){var n,o=e[t],i=r.path.length-1;for(n=0;n<i;n++)o=o[r.path[n]];switch(r.kind){case"A":p(o[r.path[n]],r.index,r.item);break;case"D":o[r.path[n]]=r.lhs;break;case"E":o[r.path[n]]=r.lhs;break;case"N":delete o[r.path[n]]}}else switch(r.kind){case"A":p(e[t],r.index,r.item);break;case"D":e[t]=r.lhs;break;case"E":e[t]=r.lhs;break;case"N":e=f(e,t)}return e}function g(e,t,r){if(e&&t&&r&&r.kind){var n,o,i=e;for(o=r.path.length-1,n=0;n<o;n++)"undefined"==typeof i[r.path[n]]&&(i[r.path[n]]={}),i=i[r.path[n]];switch(r.kind){case"A":p(i[r.path[n]],r.index,r.item);break;case"D":i[r.path[n]]=r.lhs;break;case"E":i[r.path[n]]=r.lhs;break;case"N":delete i[r.path[n]]}}}function h(e,t,r){if(e&&t){var n=function(n){r&&!r(e,t,n)||d(e,t,n)};l(e,t,n)}}function y(e){return"color: "+F[e].color+"; font-weight: bold"}function v(e){var t=e.kind,r=e.path,n=e.lhs,o=e.rhs,i=e.index,a=e.item;switch(t){case"E":return[r.join("."),n,"→",o];case"N":return[r.join("."),o];case"D":return[r.join(".")];case"A":return[r.join(".")+"["+i+"]",a];default:return[]}}function b(e,t,r,n){var o=c(e,t);try{n?r.groupCollapsed("diff"):r.group("diff")}catch(e){r.log("diff")}o?o.forEach(function(e){var t=e.kind,n=v(e);r.log.apply(r,["%c "+F[t].text,y(t)].concat(P(n)))}):r.log("—— no diff ——");try{r.groupEnd()}catch(e){r.log("—— diff end —— ")}}function m(e,t,r,n){switch("undefined"==typeof e?"undefined":N(e)){case"object":return"function"==typeof e[n]?e[n].apply(e,P(r)):e[n];case"function":return e(t);default:return e}}function w(e){var t=e.timestamp,r=e.duration;return function(e,n,o){var i=["action"];return i.push("%c"+String(e.type)),t&&i.push("%c@ "+n),r&&i.push("%c(in "+o.toFixed(2)+" ms)"),i.join(" ")}}function x(e,t){var r=t.logger,n=t.actionTransformer,o=t.titleFormatter,i=void 0===o?w(t):o,a=t.collapsed,f=t.colors,u=t.level,l=t.diff,c="undefined"==typeof t.titleFormatter;e.forEach(function(o,s){var d=o.started,p=o.startedTime,g=o.action,h=o.prevState,y=o.error,v=o.took,w=o.nextState,x=e[s+1];x&&(w=x.prevState,v=x.started-d);var S=n(g),k="function"==typeof a?a(function(){return w},g,o):a,j=D(p),E=f.title?"color: "+f.title(S)+";":"",A=["color: gray; font-weight: lighter;"];A.push(E),t.timestamp&&A.push("color: gray; font-weight: lighter;"),t.duration&&A.push("color: gray; font-weight: lighter;");var O=i(S,j,v);try{k?f.title&&c?r.groupCollapsed.apply(r,["%c "+O].concat(A)):r.groupCollapsed(O):f.title&&c?r.group.apply(r,["%c "+O].concat(A)):r.group(O)}catch(e){r.log(O)}var N=m(u,S,[h],"prevState"),P=m(u,S,[S],"action"),C=m(u,S,[y,h],"error"),F=m(u,S,[w],"nextState");if(N)if(f.prevState){var L="color: "+f.prevState(h)+"; font-weight: bold";r[N]("%c prev state",L,h)}else r[N]("prev state",h);if(P)if(f.action){var T="color: "+f.action(S)+"; font-weight: bold";r[P]("%c action    ",T,S)}else r[P]("action    ",S);if(y&&C)if(f.error){var M="color: "+f.error(y,h)+"; font-weight: bold;";r[C]("%c error     ",M,y)}else r[C]("error     ",y);if(F)if(f.nextState){var _="color: "+f.nextState(w)+"; font-weight: bold";r[F]("%c next state",_,w)}else r[F]("next state",w);l&&b(h,w,r,k);try{r.groupEnd()}catch(e){r.log("—— log end ——")}})}function S(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},t=Object.assign({},L,e),r=t.logger,n=t.stateTransformer,o=t.errorTransformer,i=t.predicate,a=t.logErrors,f=t.diffPredicate;if("undefined"==typeof r)return function(){return function(e){return function(t){return e(t)}}};if(e.getState&&e.dispatch)return console.error("[redux-logger] redux-logger not installed. Make sure to pass logger instance as middleware:\n// Logger with default options\nimport { logger } from 'redux-logger'\nconst store = createStore(\n  reducer,\n  applyMiddleware(logger)\n)\n// Or you can create your own logger with custom options http://bit.ly/redux-logger-options\nimport createLogger from 'redux-logger'\nconst logger = createLogger({\n  // ...options\n});\nconst store = createStore(\n  reducer,\n  applyMiddleware(logger)\n)\n"),function(){return function(e){return function(t){return e(t)}}};var u=[];return function(e){var r=e.getState;return function(e){return function(l){if("function"==typeof i&&!i(r,l))return e(l);var c={};u.push(c),c.started=O.now(),c.startedTime=new Date,c.prevState=n(r()),c.action=l;var s=void 0;if(a)try{s=e(l)}catch(e){c.error=o(e)}else s=e(l);c.took=O.now()-c.started,c.nextState=n(r());var d=t.diff&&"function"==typeof f?f(r,l):t.diff;if(x(u,Object.assign({},t,{diff:d})),u.length=0,c.error)throw c.error;return s}}}}var k,j,E=function(e,t){return new Array(t+1).join(e)},A=function(e,t){return E("0",t-e.toString().length)+e},D=function(e){return A(e.getHours(),2)+":"+A(e.getMinutes(),2)+":"+A(e.getSeconds(),2)+"."+A(e.getMilliseconds(),3)},O="undefined"!=typeof performance&&null!==performance&&"function"==typeof performance.now?performance:Date,N="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},P=function(e){if(Array.isArray(e)){for(var t=0,r=Array(e.length);t<e.length;t++)r[t]=e[t];return r}return Array.from(e)},C=[];k="object"===("undefined"==typeof global?"undefined":N(global))&&global?global:"undefined"!=typeof window?window:{},j=k.DeepDiff,j&&C.push(function(){"undefined"!=typeof j&&k.DeepDiff===c&&(k.DeepDiff=j,j=void 0)}),t(n,r),t(o,r),t(i,r),t(a,r),Object.defineProperties(c,{diff:{value:c,enumerable:!0},observableDiff:{value:l,enumerable:!0},applyDiff:{value:h,enumerable:!0},applyChange:{value:d,enumerable:!0},revertChange:{value:g,enumerable:!0},isConflict:{value:function(){return"undefined"!=typeof j},enumerable:!0},noConflict:{value:function(){return C&&(C.forEach(function(e){e()}),C=null),c},enumerable:!0}});var F={E:{color:"#2196F3",text:"CHANGED:"},N:{color:"#4CAF50",text:"ADDED:"},D:{color:"#F44336",text:"DELETED:"},A:{color:"#2196F3",text:"ARRAY:"}},L={level:"log",logger:console,logErrors:!0,collapsed:void 0,predicate:void 0,duration:!1,timestamp:!0,stateTransformer:function(e){return e},actionTransformer:function(e){return e},errorTransformer:function(e){return e},colors:{title:function(){return"inherit"},prevState:function(){return"#9E9E9E"},action:function(){return"#03A9F4"},nextState:function(){return"#4CAF50"},error:function(){return"#F20404"}},diff:!1,diffPredicate:void 0,transformer:void 0},T=function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},t=e.dispatch,r=e.getState;return"function"==typeof t||"function"==typeof r?S()({dispatch:t,getState:r}):void console.error("\n[redux-logger v3] BREAKING CHANGE\n[redux-logger v3] Since 3.0.0 redux-logger exports by default logger with default settings.\n[redux-logger v3] Change\n[redux-logger v3] import createLogger from 'redux-logger'\n[redux-logger v3] to\n[redux-logger v3] import { createLogger } from 'redux-logger'\n")};e.defaults=L,e.createLogger=S,e.logger=T,e.default=T,Object.defineProperty(e,"__esModule",{value:!0})});
@@ -45853,7 +54409,7 @@ exports['default'] = thunk;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(52)))
 
 /***/ }),
-/* 445 */
+/* 447 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45870,13 +54426,13 @@ var rootReducer = (0, _redux.combineReducers)({});
 exports.default = rootReducer;
 
 /***/ }),
-/* 446 */
+/* 448 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(447);
+var content = __webpack_require__(449);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -45884,7 +54440,7 @@ var transform;
 var options = {"hmr":true}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(449)(content, options);
+var update = __webpack_require__(451)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -45901,10 +54457,10 @@ if(false) {
 }
 
 /***/ }),
-/* 447 */
+/* 449 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(448)(false);
+exports = module.exports = __webpack_require__(450)(false);
 // imports
 
 
@@ -45915,7 +54471,7 @@ exports.push([module.i, "/*\n *= require_self\n */\n* {\n  -webkit-font-smoothin
 
 
 /***/ }),
-/* 448 */
+/* 450 */
 /***/ (function(module, exports) {
 
 /*
@@ -45997,7 +54553,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 449 */
+/* 451 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -46053,7 +54609,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(450);
+var	fixUrls = __webpack_require__(452);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -46369,7 +54925,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 450 */
+/* 452 */
 /***/ (function(module, exports) {
 
 

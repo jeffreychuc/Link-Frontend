@@ -8,10 +8,15 @@
   border: none;
   border-radius: 0;
   background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);
+  // box-shadow: none;
   a {
     text-decoration: none;
     color: white;
   }
+}
+
+.navbar-scrolled {
+  
 }
 
 .navbar-default .navbar-brand {
