@@ -6,7 +6,6 @@ export default class SampleInputs extends React.Component {
   }
 
   render() {
-    console.log('winning');
     return (
       <div className="about">
         <h2 className="header">About</h2>
