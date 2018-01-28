@@ -24,5 +24,6 @@ Our app includes a lightweight website built in React/Redux. The site includes a
 * google-map-react
 
 ## Possible Future Features
-* Filter shelters by demographic restrictions (female only shelters, etc)
-* Text users regarding nearby events (monthly free clinics, etc)
+* Save queries from users to report areas with shortages of food or shelter.
+* Filter shelters by demographic restrictions (female only shelters, etc).
+* Text users regarding nearby events (monthly free clinics, etc).
