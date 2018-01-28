@@ -19,7 +19,7 @@ export class MapContainer extends React.Component {
   }
 
   componentDidMount() {
-    axios.get('http://impacthub-first.herokuapp.com/locations/shelter')
+    axios.get('https://impacthub-first.herokuapp.com/locations/shelter')
     .then(function (response) {
       console.log('success');
       console.log(response);

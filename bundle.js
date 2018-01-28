@@ -46295,7 +46295,7 @@ var MapContainer = exports.MapContainer = function (_React$Component) {
   _createClass(MapContainer, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      _axios2.default.get('http://impacthub-first.herokuapp.com/locations/shelter').then(function (response) {
+      _axios2.default.get('https://impacthub-first.herokuapp.com/locations/shelter').then(function (response) {
         console.log('success');
         console.log(response);
       }).catch(function (error) {
