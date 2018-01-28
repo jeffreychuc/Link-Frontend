@@ -46285,9 +46285,9 @@ var MapContainer = exports.MapContainer = function (_React$Component) {
       showingInfoWindow: false,
       activeMarker: {},
       selectedPlace: {},
-      shelterMarkers: [],
-      foodMarkers: [],
-      clincMarkers: []
+      shelterMarkers: _data.shelterData,
+      foodMarkers: _data.foodData,
+      clinicMarkers: _data.clinicData
     };
     _this.onMarkerClick = _this.onMarkerClick.bind(_this);
     _this.onMapClicked = _this.onMapClicked.bind(_this);
@@ -46297,14 +46297,16 @@ var MapContainer = exports.MapContainer = function (_React$Component) {
   _createClass(MapContainer, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      _axios2.default.get('https://impacthub-first.herokuapp.com/locations/shelter').then(function (response) {
-        console.log('success');
-        console.log(response);
-      }).catch(function (error) {
-        console.log('wtf');
-        console.log(error);
-      });
-      this.setState({ shelterMarkers: _data.shelterData, foodMarkers: _data.foodData, clinicMarkers: _data.clinicData });
+      // axios.get('https://impacthub-first.herokuapp.com/locations/shelter')
+      // .then(function (response) {
+      //   console.log('success');
+      //   console.log(response);
+      // })
+      // .catch(function (error) {
+      //   console.log('wtf');
+      //   console.log(error);
+      // });
+      // this.setState({shelterMarkers: shelterData, foodMarkers: foodData, clinicMarkers: clinicData});
     }
   }, {
     key: 'onMarkerClick',

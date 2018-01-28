@@ -12,25 +12,25 @@ export class MapContainer extends React.Component {
       showingInfoWindow: false,
       activeMarker: {},
       selectedPlace: {},
-      shelterMarkers: [],
-      foodMarkers: [],
-      clincMarkers: []
+      shelterMarkers: shelterData,
+      foodMarkers: foodData,
+      clinicMarkers: clinicData
     };
     this.onMarkerClick = this.onMarkerClick.bind(this);
     this.onMapClicked = this.onMapClicked.bind(this);
   }
 
   componentDidMount() {
-    axios.get('https://impacthub-first.herokuapp.com/locations/shelter')
-    .then(function (response) {
-      console.log('success');
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log('wtf');
-      console.log(error);
-    });
-    this.setState({shelterMarkers: shelterData, foodMarkers: foodData, clinicMarkers: clinicData});
+    // axios.get('https://impacthub-first.herokuapp.com/locations/shelter')
+    // .then(function (response) {
+    //   console.log('success');
+    //   console.log(response);
+    // })
+    // .catch(function (error) {
+    //   console.log('wtf');
+    //   console.log(error);
+    // });
+    // this.setState({shelterMarkers: shelterData, foodMarkers: foodData, clinicMarkers: clinicData});
   }
 
   onMarkerClick (props, marker, e) {
