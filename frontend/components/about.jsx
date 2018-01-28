@@ -10,7 +10,7 @@ export default class SampleInputs extends React.Component {
       <div className="about">
         <h2 className="header">About</h2>
         <ul>
-          <li><strong>Link</strong> was designed with <strong>accessability</strong> in mind, all information is accessable through a SMS gateway.</li>
+          <li><strong>Link</strong> was designed with <strong>accessability</strong> in mind, all information is accessable through a <strong>simple text message</strong>.</li>
         </ul>
         <ul>
           <br />
@@ -19,7 +19,7 @@ export default class SampleInputs extends React.Component {
               <h2 className='numberBig'>1</h2>
             </div>
             <div className='textBody'>
-              <h2>Tell us what you need</h2>
+              <h2><strong>Tell us what you need</strong></h2>
               <li><strong>Link</strong> uses advanced AI natural language processing to determine what the user is requesting</li>
             </div>
           </div>
@@ -28,7 +28,7 @@ export default class SampleInputs extends React.Component {
               <h2 className='numberBig'>2</h2>
             </div>
             <div className='textBody'>
-              <h2>Tell us where you are</h2>
+              <h2><strong>Tell us where you are.</strong></h2>
               <li><strong>Link</strong> only returns nearest relevant results.</li>
             </div>
           </div>

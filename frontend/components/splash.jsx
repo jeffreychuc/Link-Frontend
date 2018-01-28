@@ -23,8 +23,11 @@ export default class Splash extends React.Component {
       <div className="splash">
         <div className="splash-text">
         <h2>
-          We're only a text away. 24/7. 365.
+          Free help is only a text away.
         </h2>
+        <p>Get information about available services sent straight to your phone.</p>
+        <br />
+        <br />
         <h3>
           text (510) 999 6129
         </h3>
