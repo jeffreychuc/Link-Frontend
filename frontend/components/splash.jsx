@@ -17,18 +17,21 @@ export default class Splash extends React.Component {
   render() {
     return this.state.displayMap ? (<MapDisplay />) : (
       <div className="splash">
-        <div className="splash_text">
+        <div className="splash-text">
         <h2>
-          Link, we're only a text away.<br/>24/7, 365
+          We're only a text away. 24/7. 365.
         </h2>
         <h3>
-          text us at <br/> 1.555.5555
+          text (510) 999 6129
         </h3>
         </div>
-        <Button onClick={() => this.handleMap()}>Click me</Button>
+        <button onClick={() => this.handleMap()} className="splash-button">Preview Now</button>
         <div className="splash_phone">
-          <img src="assets/splash_iphone.png" alt="iphone with response from Link"  />
+          <img
+            src="https://res.cloudinary.com/trwong/image/upload/v1517105698/imageedit_2_7721807844_rodzu1.png"
+            alt="iphone with response from Link"  />
         </div>
+
       </div>
     );
   }

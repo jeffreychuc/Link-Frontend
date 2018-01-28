@@ -8,6 +8,10 @@
   border: none;
   border-radius: 0;
   background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);
+  a {
+    text-decoration: none;
+    color: white;
+  }
 }
 
 .navbar-default .navbar-brand {
@@ -24,4 +28,9 @@
 
 .navbar-default .container  {
  margin-top: 10px;
+}
+
+.link-logo {
+  height: 30px;
+  width: 30px;
 }
