@@ -3,6 +3,7 @@ import NavHeader from './navheader_container';
 import Splash from './splash_container';
 import SampleInputs from './sample_inputs_container';
 import MapDisplay from './mapdisplay_container';
+// import Contact from './contact_container';
 
 const Landing = () => (
   <div className='landing'>
@@ -10,6 +11,7 @@ const Landing = () => (
     <Splash />
     <SampleInputs />
     <MapDisplay />
+    {/* <Contact /> */}
   </div>
 );
 

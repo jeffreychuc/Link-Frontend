@@ -5,12 +5,6 @@ export default class Splash extends React.Component {
   constructor(props) {
     super(props);
     this.state = {displayMap: false};
-    this.handleMap = this.handleMap.bind(this);
-  }
-
-  handleMap() {
-    this.setState({displayMap: !this.state.displayMap});
-    // console.log(this.state);
   }
 
   render() {
@@ -24,7 +18,10 @@ export default class Splash extends React.Component {
           text (510) 999 6129
         </h3>
         </div>
-        <button onClick={() => this.handleMap()} className="splash-button">Preview Now</button>
+        <button
+          onClick={ () => window.scrollTo(0, 3000) }
+          className="splash-button"
+          >Preview Now</button>
         <div className="splash_phone">
           <img
             src="https://res.cloudinary.com/trwong/image/upload/v1517120829/splash_iphone_imwrpb.png"
