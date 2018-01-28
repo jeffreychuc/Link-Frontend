@@ -5,6 +5,17 @@ export default class Splash extends React.Component {
   constructor(props) {
     super(props);
     this.state = {displayMap: false};
+    this.smoothScroll = this.smoothScroll.bind(this);
+  }
+
+  smoothScroll(h) {
+    let i = h || 0;
+    if (i < 1795) {
+      setTimeout(() => {
+        window.scrollTo(0, i);
+        this.smoothScroll(i + 30);
+      }, 1);
+    }
   }
 
   render() {
@@ -19,7 +30,7 @@ export default class Splash extends React.Component {
         </h3>
         </div>
         <button
-          onClick={ () => window.scrollTo(0, 3000) }
+          onClick={ () => this.smoothScroll(0) }
           className="splash-button"
           >Preview Now</button>
         <div className="splash_phone">
