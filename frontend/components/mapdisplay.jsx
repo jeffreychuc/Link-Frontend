@@ -1,5 +1,8 @@
 import React from 'react';
+import axios from 'axios';
+import shortid from 'shortid';
 import { Map, InfoWindow, Marker, GoogleApiWrapper } from 'google-maps-react';
+import { testData } from './data.js';
 
 export class MapContainer extends React.Component {
 
@@ -9,13 +12,23 @@ export class MapContainer extends React.Component {
       showingInfoWindow: false,
       activeMarker: {},
       selectedPlace: {},
+      shelterMarkers: []
     };
     this.onMarkerClick = this.onMarkerClick.bind(this);
     this.onMapClicked = this.onMapClicked.bind(this);
   }
 
   componentDidMount() {
-
+    axios.get('http://impacthub-first.herokuapp.com/locations/shelter')
+    .then(function (response) {
+      console.log('success');
+      console.log(response);
+    })
+    .catch(function (error) {
+      console.log('wtf');
+      console.log(error);
+    });
+    this.setState({shelterMarkers: testData.results});
   }
 
   onMarkerClick (props, marker, e) {
@@ -39,32 +52,37 @@ export class MapContainer extends React.Component {
 
 
   render() {
-    // const google = window.google;
     return this.props.google ? (
       <Map google={this.props.google}
           onClick={this.onMapClicked}
           style={{width: '100%', height: '100%', position: 'relative'}}
           className={'map'}
           zoom={14}>
-        {/* <Marker
-          title={'The marker`s title will appear as a tooltip.'}
-          name={'SOMA'}
-          position={{lat: 37.778519, lng: -122.405640}} />
-        <Marker
-          name={'Dolores park'}
-          position={{lat: 37.759703, lng: -122.428093}} />
-        <Marker /> */}
-        <Marker
-          google={this.props.google}
-          name={'Your position'}
-          position={{lat: 37.762391, lng: -122.439192}}
+        {this.state.shelterMarkers.map((shelter) => (
+          <Marker
+          onClick={this.onMarkerClick}
+          key={shortid.generate()}
+          name={shelter.name}
+          address={shelter.formatted_address}
+          position={shelter.geometry.location}
           icon={{
             url: "assets/housing_pin.png",
             anchor: new this.props.google.maps.Point(32,32),
             scaledSize: new this.props.google.maps.Size(64,64)
           }} />
+        ))}
+
+        <InfoWindow
+          marker={this.state.activeMarker}
+          visible={this.state.showingInfoWindow}>
+            <div className='mapCallout'>
+              <h2>{this.state.selectedPlace.name}</h2>
+              <h3>{this.state.selectedPlace.address}</h3>
+            </div>
+        </InfoWindow>
+
       </Map>
-    ) : (<div>bull</div>);
+    ) : (<div>loading</div>);
   }
 }
 
