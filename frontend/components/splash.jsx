@@ -27,7 +27,6 @@ export default class Splash extends React.Component {
         </h2>
         <p>Get information about available services sent straight to your phone.</p>
         <br />
-        <br />
         <h3>
           text (510) 999 6129
         </h3>

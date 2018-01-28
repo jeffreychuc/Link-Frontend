@@ -46689,7 +46689,6 @@ var Splash = function (_React$Component) {
             'Get information about available services sent straight to your phone.'
           ),
           _react2.default.createElement('br', null),
-          _react2.default.createElement('br', null),
           _react2.default.createElement(
             'h3',
             null,
