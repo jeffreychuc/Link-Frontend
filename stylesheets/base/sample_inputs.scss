@@ -8,7 +8,7 @@
   align-content: flex-end;
   background-color: white;
   position: relative;
-  bottom: 0;
+  bottom: 60px;
 }
 
 .sample-header {
@@ -17,7 +17,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 44px;
-  margin-top: 45px;
+  margin-top: 60px;
 }
 
 .sample-container {
@@ -47,8 +47,3 @@
   background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);
   margin: 0;
 }
-
-// .z-index {
-//   position: absolute;
-
-// }

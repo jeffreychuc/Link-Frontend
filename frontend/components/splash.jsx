@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
-import MapDisplay from './mapdisplay_container';
 
 export default class Splash extends React.Component {
   constructor(props) {
@@ -11,11 +10,11 @@ export default class Splash extends React.Component {
 
   handleMap() {
     this.setState({displayMap: !this.state.displayMap});
-    console.log(this.state);
+    // console.log(this.state);
   }
 
   render() {
-    return this.state.displayMap ? (<MapDisplay />) : (
+    return (
       <div className="splash">
         <div className="splash-text">
         <h2>
@@ -31,7 +30,6 @@ export default class Splash extends React.Component {
             src="https://res.cloudinary.com/trwong/image/upload/v1517105698/imageedit_2_7721807844_rodzu1.png"
             alt="iphone with response from Link"  />
         </div>
-
       </div>
     );
   }

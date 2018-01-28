@@ -55,63 +55,66 @@ export class MapContainer extends React.Component {
 
   render() {
     return this.props.google ? (
-      <Map google={this.props.google}
-          onClick={this.onMapClicked}
-          style={{width: '100%', height: '100%', position: 'relative'}}
-          className={'map'}
-          zoom={14}>
-        {this.state.shelterMarkers.map((shelter) => (
-          <Marker
-          onClick={this.onMarkerClick}
-          key={shortid.generate()}
-          name={shelter.name}
-          address={shelter.formatted_address}
-          position={shelter.geometry.location}
-          icon={{
-            url: "assets/housing_pin.png",
-            anchor: new this.props.google.maps.Point(32,32),
-            scaledSize: new this.props.google.maps.Size(64,64)
-          }} />
-        ))}
+      <div className='mapFrame'>
 
-        {this.state.foodMarkers.map((food) => (
-          <Marker
-          onClick={this.onMarkerClick}
-          key={shortid.generate()}
-          name={food.name}
-          address={food.formatted_address}
-          position={food.geometry.location}
-          icon={{
-            url: "assets/food_pin.png",
-            anchor: new this.props.google.maps.Point(32,32),
-            scaledSize: new this.props.google.maps.Size(64,64)
-          }} />
-        ))}
+        <Map google={this.props.google}
+            onClick={this.onMapClicked}
+            style={{margin: '0 auto', width: '90%', height: '90%', position: 'relative'}}
+            className={'map'}
+            zoom={15}>
+          {this.state.shelterMarkers.map((shelter) => (
+            <Marker
+            onClick={this.onMarkerClick}
+            key={shortid.generate()}
+            name={shelter.name}
+            address={shelter.formatted_address}
+            position={shelter.geometry.location}
+            icon={{
+              url: "assets/housing_pin.png",
+              anchor: new this.props.google.maps.Point(32,32),
+              scaledSize: new this.props.google.maps.Size(64,64)
+            }} />
+          ))}
 
-        {this.state.clinicMarkers.map((clinic) => (
-          <Marker
-          onClick={this.onMarkerClick}
-          key={shortid.generate()}
-          name={clinic.name}
-          address={clinic.formatted_address}
-          position={clinic.geometry.location}
-          icon={{
-            url: "assets/clinic_pin.png",
-            anchor: new this.props.google.maps.Point(32,32),
-            scaledSize: new this.props.google.maps.Size(64,64)
-          }} />
-        ))}
+          {this.state.foodMarkers.map((food) => (
+            <Marker
+            onClick={this.onMarkerClick}
+            key={shortid.generate()}
+            name={food.name}
+            address={food.formatted_address}
+            position={food.geometry.location}
+            icon={{
+              url: "assets/food_pin.png",
+              anchor: new this.props.google.maps.Point(32,32),
+              scaledSize: new this.props.google.maps.Size(64,64)
+            }} />
+          ))}
 
-        <InfoWindow
-          marker={this.state.activeMarker}
-          visible={this.state.showingInfoWindow}>
-            <div className='mapCallout'>
-              <h2>{this.state.selectedPlace.name}</h2>
-              <h3>{this.state.selectedPlace.address}</h3>
-            </div>
-        </InfoWindow>
+          {this.state.clinicMarkers.map((clinic) => (
+            <Marker
+            onClick={this.onMarkerClick}
+            key={shortid.generate()}
+            name={clinic.name}
+            address={clinic.formatted_address}
+            position={clinic.geometry.location}
+            icon={{
+              url: "assets/clinic_pin.png",
+              anchor: new this.props.google.maps.Point(32,32),
+              scaledSize: new this.props.google.maps.Size(64,64)
+            }} />
+          ))}
 
-      </Map>
+          <InfoWindow
+            marker={this.state.activeMarker}
+            visible={this.state.showingInfoWindow}>
+              <div className='mapCallout'>
+                <h2>{this.state.selectedPlace.name}</h2>
+                <h3>{this.state.selectedPlace.address}</h3>
+              </div>
+          </InfoWindow>
+
+        </Map>
+      </div>
     ) : (<div>loading</div>);
   }
 }
