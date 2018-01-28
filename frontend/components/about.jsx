@@ -21,7 +21,7 @@ export default class SampleInputs extends React.Component {
             </div>
             <div class='textBody'>
               <h2>Tell us what you need</h2>
-              <li><strong>Link</strong> uses natural language processing to determine what the user is requesting</li>
+              <li><strong>Link</strong> uses advanced AI natural language processing to determine what the user is requesting</li>
             </div>
           </div>
           <div class='numberList'>
@@ -30,7 +30,7 @@ export default class SampleInputs extends React.Component {
             </div>
             <div class='textBody'>
               <h2>Tell us where you are</h2>
-              <li><strong>Link</strong> only returns the most relevant results.</li>
+              <li><strong>Link</strong> only returns nearest relevant results.</li>
             </div>
           </div>
           <div class='numberList'>
@@ -38,7 +38,7 @@ export default class SampleInputs extends React.Component {
             <div class='textBody'>
               <div>
                 <h2>Thats it!</h2>
-                <li>We're here for you, 24/7, 365 days a year. Ask us questions anytime you want, theres no limit.</li>
+                <li>We're here for you, 24/7, 365 days a year. Ask us questions anytime you want, theres no limit. No questions asked, only questions answered.</li>
               </div>
             </div>
           </div>
