@@ -36,8 +36,8 @@ export default class SampleInputs extends React.Component {
               <h2 className='numberBig'>3</h2>
             <div className='textBody'>
               <div>
-                <h2>Thats it!</h2>
-                <li>We're here for you, 24/7, 365 days a year. Ask us questions anytime you want, theres no limit. No questions asked, only questions answered.</li>
+                <h2><strong>Thats it!</strong></h2>
+                <li>We're here for you, <strong>24/7, 365 days</strong> a year. Ask us questions anytime you want, theres no limit. No questions asked, only questions answered.</li>
               </div>
             </div>
           </div>

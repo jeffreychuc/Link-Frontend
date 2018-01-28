@@ -56790,12 +56790,22 @@ var SampleInputs = function (_React$Component) {
                 _react2.default.createElement(
                   "h2",
                   null,
-                  "Thats it!"
+                  _react2.default.createElement(
+                    "strong",
+                    null,
+                    "Thats it!"
+                  )
                 ),
                 _react2.default.createElement(
                   "li",
                   null,
-                  "We're here for you, 24/7, 365 days a year. Ask us questions anytime you want, theres no limit. No questions asked, only questions answered."
+                  "We're here for you, ",
+                  _react2.default.createElement(
+                    "strong",
+                    null,
+                    "24/7, 365 days"
+                  ),
+                  " a year. Ask us questions anytime you want, theres no limit. No questions asked, only questions answered."
                 )
               )
             )
