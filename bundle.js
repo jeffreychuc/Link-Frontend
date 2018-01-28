@@ -34492,9 +34492,11 @@ var _mapdisplay_container = __webpack_require__(397);
 
 var _mapdisplay_container2 = _interopRequireDefault(_mapdisplay_container);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _about_container = __webpack_require__(451);
 
-// import Contact from './contact_container';
+var _about_container2 = _interopRequireDefault(_about_container);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Landing = function Landing() {
   return _react2.default.createElement(
@@ -34502,11 +34504,12 @@ var Landing = function Landing() {
     { className: 'landing' },
     _react2.default.createElement(_navheader_container2.default, null),
     _react2.default.createElement(_splash_container2.default, null),
+    _react2.default.createElement(_about_container2.default, null),
     _react2.default.createElement(_sample_inputs_container2.default, null),
     _react2.default.createElement(_mapdisplay_container2.default, null)
   );
 };
-
+// import Contact from './contact_container';
 exports.default = Landing;
 
 /***/ }),
@@ -54263,7 +54266,7 @@ exports = module.exports = __webpack_require__(448)(false);
 
 
 // module
-exports.push([module.i, "/*\n *= require_self\n */\n* {\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale; }\n\n.navbar {\n  position: fixed;\n  top: 0;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n  height: 80px;\n  border: none;\n  border-radius: 0;\n  background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%); }\n  .navbar a {\n    text-decoration: none;\n    color: white; }\n\n.navbar-default .navbar-brand {\n  color: #fff;\n  font-family: 'Roboto', sans-serif;\n  font-size: 18px; }\n\n.navbar-default .navbar-nav > li > a {\n  color: #fff;\n  font-family: 'Rubik', sans-serif;\n  font-size: 18px; }\n\n.navbar-default .container {\n  margin-top: 10px; }\n\n.link-logo {\n  height: 35px;\n  width: 35px;\n  margin-right: 10px;\n  margin: 0 10px 11px 0; }\n\n.logo {\n  font-family: 'Pacifico', cursive;\n  font-size: 32px; }\n\n.splash {\n  margin-top: 80px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);\n  height: auto;\n  position: relative; }\n  .splash h2 {\n    color: white;\n    font-family: 'Rubik', sans-serif;\n    text-align: center; }\n  .splash h3 {\n    color: white;\n    text-align: center; }\n  .splash img {\n    height: 50%;\n    width: 50%;\n    overflow: hidden; }\n  .splash .splash_phone {\n    display: flex;\n    justify-content: center;\n    width: 800px;\n    margin-top: 25px;\n    z-index: 1; }\n  .splash .splash-text h2 {\n    font-size: 50px; }\n  .splash .splash-text h3 {\n    font-size: 40px; }\n\n.splash-button {\n  min-height: 70px;\n  min-width: 250px;\n  font-size: 24px;\n  font-weight: bold;\n  color: #633991;\n  border: none;\n  box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.26);\n  margin-top: 25px;\n  border-radius: 5px; }\n  .splash-button:hover {\n    color: #d6619c; }\n\n.mapFrame {\n  display: flex; }\n\n.spacer {\n  flex: 2;\n  width: 30px; }\n\n.landing {\n  min-width: 1000px; }\n\n.map {\n  padding-top: 100px;\n  background-color: #dedede;\n  box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.26); }\n\n.sample-inputs {\n  width: 100%;\n  height: 390px;\n  z-index: 5;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  background-color: white;\n  position: relative;\n  bottom: 60px; }\n\n.sample-header {\n  font-size: 44px;\n  margin-top: 30px; }\n\n.sample-inputs-container {\n  display: flex;\n  flex-wrap: wrap;\n  justify-content: center;\n  align-content: flex-end; }\n\n.sample-container {\n  min-width: 300px;\n  width: 25%;\n  height: 120px;\n  margin: 15px;\n  box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.26);\n  padding: 20px;\n  font-size: 18px;\n  position: relative;\n  font-weight: 500;\n  display: flex; }\n  .sample-container div {\n    margin-left: 10px; }\n\n.gradient-border {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 3px;\n  background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);\n  margin: 0; }\n", ""]);
+exports.push([module.i, "/*\n *= require_self\n */\n* {\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale; }\n\n.navbar {\n  position: fixed;\n  top: 0;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n  height: 80px;\n  border: none;\n  border-radius: 0;\n  background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%); }\n  .navbar a {\n    text-decoration: none;\n    color: white; }\n\n.navbar-default .navbar-brand {\n  color: #fff;\n  font-family: 'Roboto', sans-serif;\n  font-size: 18px; }\n\n.navbar-default .navbar-nav > li > a {\n  color: #fff;\n  font-family: 'Rubik', sans-serif;\n  font-size: 18px; }\n\n.navbar-default .container {\n  margin-top: 10px; }\n\n.link-logo {\n  height: 35px;\n  width: 35px;\n  margin-right: 10px;\n  margin: 0 10px 11px 0; }\n\n.logo {\n  font-family: 'Pacifico', cursive;\n  font-size: 32px; }\n\n.splash {\n  margin-top: 80px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);\n  height: auto;\n  position: relative; }\n  .splash h2 {\n    color: white;\n    font-family: 'Rubik', sans-serif;\n    text-align: center; }\n  .splash h3 {\n    color: white;\n    text-align: center; }\n  .splash img {\n    height: 50%;\n    width: 50%;\n    overflow: hidden; }\n  .splash .splash_phone {\n    display: flex;\n    justify-content: center;\n    width: 800px;\n    margin-top: 25px;\n    z-index: 1; }\n  .splash .splash-text h2 {\n    font-size: 50px; }\n  .splash .splash-text h3 {\n    font-size: 40px; }\n\n.splash-button {\n  min-height: 70px;\n  min-width: 250px;\n  font-size: 24px;\n  font-weight: bold;\n  color: #633991;\n  border: none;\n  box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.26);\n  margin-top: 25px;\n  border-radius: 5px; }\n  .splash-button:hover {\n    color: #d6619c; }\n\n.mapFrame {\n  display: flex; }\n\n.spacer {\n  flex: 2;\n  width: 30px; }\n\n.landing {\n  min-width: 1000px; }\n\n.map {\n  padding-top: 100px;\n  background-color: #dedede;\n  box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.26); }\n\n.sample-inputs {\n  width: 100%;\n  height: 390px;\n  z-index: 5;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  background-color: white;\n  position: relative;\n  bottom: 60px; }\n\n.sample-header {\n  font-size: 44px;\n  margin-top: 30px; }\n\n.sample-inputs-container {\n  display: flex;\n  flex-wrap: wrap;\n  justify-content: center;\n  align-content: flex-end; }\n\n.sample-container {\n  min-width: 300px;\n  width: 25%;\n  height: 120px;\n  margin: 15px;\n  box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.26);\n  padding: 20px;\n  font-size: 18px;\n  position: relative;\n  font-weight: 500;\n  display: flex; }\n  .sample-container div {\n    margin-left: 10px; }\n\n.gradient-border {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 3px;\n  background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);\n  margin: 0; }\n\n.about {\n  height: 700px;\n  display: flex;\n  align-content: center;\n  flex-direction: column;\n  justify-content: center;\n  background-color: #E1F5FE;\n  font-family: 'Rubik', sans-serif; }\n  .about ul {\n    margin: 0 auto;\n    padding-top: 20px; }\n    .about ul li {\n      list-style: none;\n      font-size: 20px; }\n    .about ul h2 {\n      font-size: 20px; }\n  .about .numberList {\n    display: flex; }\n    .about .numberList .textBody {\n      border-bottom: 1px solid lightgray;\n      width: 700px;\n      margin-left: 30px; }\n    .about .numberList .numberBig {\n      box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.07);\n      padding: 10px;\n      margin-top: 0;\n      width: 100px;\n      height: 100px;\n      border-radius: 50%;\n      margin-bottom: 1.5rem;\n      background-color: #FFF;\n      color: #1565C0;\n      font-size: 48px;\n      text-align: center;\n      line-height: 80px;\n      font-weight: 300;\n      transition: all 0.3s ease; }\n  .about .numberList:hover .numberBig {\n    background-image: linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%);\n    box-shadow: 0px 9px 32px 0px rgba(0, 0, 0, 0.09);\n    color: #FFF; }\n  .about .header {\n    font-size: 44px;\n    top: 0px;\n    margin: 0 auto; }\n", ""]);
 
 // exports
 
@@ -54816,6 +54819,206 @@ module.exports = function (css) {
 	return fixedCss;
 };
 
+
+/***/ }),
+/* 451 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _reactRedux = __webpack_require__(32);
+
+var _about = __webpack_require__(452);
+
+var _about2 = _interopRequireDefault(_about);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {};
+};
+
+var mapDispatchToProps = function mapDispatchToProps(dispatch) {
+  return {};
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(_about2.default);
+
+/***/ }),
+/* 452 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(0);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var SampleInputs = function (_React$Component) {
+  _inherits(SampleInputs, _React$Component);
+
+  function SampleInputs(props) {
+    _classCallCheck(this, SampleInputs);
+
+    return _possibleConstructorReturn(this, (SampleInputs.__proto__ || Object.getPrototypeOf(SampleInputs)).call(this, props));
+  }
+
+  _createClass(SampleInputs, [{
+    key: 'render',
+    value: function render() {
+      console.log('winning');
+      return _react2.default.createElement(
+        'div',
+        { className: 'about' },
+        _react2.default.createElement(
+          'h2',
+          { className: 'header' },
+          'About'
+        ),
+        _react2.default.createElement(
+          'ul',
+          null,
+          _react2.default.createElement(
+            'li',
+            null,
+            _react2.default.createElement(
+              'strong',
+              null,
+              'Link'
+            ),
+            ' was designed with ',
+            _react2.default.createElement(
+              'strong',
+              null,
+              'accessability'
+            ),
+            ' in mind, all information is accessable through a SMS gateway.'
+          )
+        ),
+        _react2.default.createElement(
+          'ul',
+          null,
+          _react2.default.createElement('br', null),
+          _react2.default.createElement(
+            'div',
+            { 'class': 'numberList' },
+            _react2.default.createElement(
+              'div',
+              null,
+              _react2.default.createElement(
+                'h2',
+                { 'class': 'numberBig' },
+                '1'
+              )
+            ),
+            _react2.default.createElement(
+              'div',
+              { 'class': 'textBody' },
+              _react2.default.createElement(
+                'h2',
+                null,
+                'Tell us what you need'
+              ),
+              _react2.default.createElement(
+                'li',
+                null,
+                _react2.default.createElement(
+                  'strong',
+                  null,
+                  'Link'
+                ),
+                ' uses advanced AI natural language processing to determine what the user is requesting'
+              )
+            )
+          ),
+          _react2.default.createElement(
+            'div',
+            { 'class': 'numberList' },
+            _react2.default.createElement(
+              'div',
+              null,
+              _react2.default.createElement(
+                'h2',
+                { 'class': 'numberBig' },
+                '2'
+              )
+            ),
+            _react2.default.createElement(
+              'div',
+              { 'class': 'textBody' },
+              _react2.default.createElement(
+                'h2',
+                null,
+                'Tell us where you are'
+              ),
+              _react2.default.createElement(
+                'li',
+                null,
+                _react2.default.createElement(
+                  'strong',
+                  null,
+                  'Link'
+                ),
+                ' only returns nearest relevant results.'
+              )
+            )
+          ),
+          _react2.default.createElement(
+            'div',
+            { 'class': 'numberList' },
+            _react2.default.createElement(
+              'h2',
+              { 'class': 'numberBig' },
+              '3'
+            ),
+            _react2.default.createElement(
+              'div',
+              { 'class': 'textBody' },
+              _react2.default.createElement(
+                'div',
+                null,
+                _react2.default.createElement(
+                  'h2',
+                  null,
+                  'Thats it!'
+                ),
+                _react2.default.createElement(
+                  'li',
+                  null,
+                  'We\'re here for you, 24/7, 365 days a year. Ask us questions anytime you want, theres no limit. No questions asked, only questions answered.'
+                )
+              )
+            )
+          )
+        )
+      );
+    }
+  }]);
+
+  return SampleInputs;
+}(_react2.default.Component);
+
+exports.default = SampleInputs;
 
 /***/ })
 /******/ ]);
