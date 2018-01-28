@@ -3,6 +3,8 @@ import axios from 'axios';
 import shortid from 'shortid';
 import { Map, InfoWindow, Marker, GoogleApiWrapper } from 'google-maps-react';
 import { shelterData, foodData, clinicData } from './data.js';
+import Contact from './contact_container';
+
 
 export class MapContainer extends React.Component {
 
@@ -55,8 +57,13 @@ export class MapContainer extends React.Component {
 
   render() {
     return this.props.google ? (
+<<<<<<< HEAD
       <div className='mapFrame'>
         <h2 className='header'>Nearby Services</h2>
+=======
+      <div className='mapFrame' id="map-container">
+
+>>>>>>> 61509ff8669157a845df70c4454648c7492f9fe8
         <Map google={this.props.google}
             onClick={this.onMapClicked}
             style={{margin: '0 auto', width: '90%', height: '90%', position: 'relative'}}
@@ -114,6 +121,7 @@ export class MapContainer extends React.Component {
           </InfoWindow>
 
         </Map>
+        <Contact />
       </div>
     ) : (<div>loading</div>);
   }
