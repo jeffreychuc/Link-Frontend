@@ -67,11 +67,15 @@
   display: flex;
   .header {
     color: black;
-    height: auto;
-    z-index: 9999;
+    padding-top: 30px;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin: 0 auto;
+    z-index: 1029;
     font-size: 35px;
-    height: 43px;
+    height: 48px;
     border-bottom: 1px solid black;
+    padding-bottom: 8px;
   }
 }
 
