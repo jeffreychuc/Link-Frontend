@@ -67,8 +67,17 @@
   border-radius: 5px;
   background-color: white;
 
+  vertical-align: middle;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -moz-osx-font-smoothing: grayscale;
+  transition-duration: 0.3s;
+  transition-property: transform;
+
   &:hover {
     color: #d6619c;
+    cursor: pointer;
+    transform: scale(1.1);
   }
 }
 

@@ -10,7 +10,7 @@ export default class Splash extends React.Component {
 
   smoothScroll(h) {
     let i = h || 0;
-    if (i < 1795) {
+    if (i < 1000) {
       setTimeout(() => {
         window.scrollTo(0, i);
         this.smoothScroll(i + 30);

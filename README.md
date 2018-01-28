@@ -1,5 +1,6 @@
 # Link
 [live site](http://link.jchuc.me)
+
 [backend repo](https://github.com/Strauaar/hackathon)
 
 Link helps homeless with only SMS texting capabilities find critical information like the location of nearby shelters and soup kitchens. If you are in need of this service, please text (510) 999 6129.
@@ -24,7 +25,7 @@ Our app includes a lightweight website built in React/Redux. The site includes a
 * Google Places API
 * google-map-react
 
-## Possible Future Features
+## Future Features
 * Save queries from users to report areas with shortages of food or shelter.
 * Filter shelters by demographic restrictions (female only shelters, etc).
 * Text users regarding nearby events (monthly free clinics, etc).
