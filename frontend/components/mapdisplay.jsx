@@ -2,7 +2,7 @@ import React from 'react';
 import axios from 'axios';
 import shortid from 'shortid';
 import { Map, InfoWindow, Marker, GoogleApiWrapper } from 'google-maps-react';
-import { testData } from './data.js';
+import { shelterData, foodData, clinicData } from './data.js';
 
 export class MapContainer extends React.Component {
 
@@ -12,7 +12,9 @@ export class MapContainer extends React.Component {
       showingInfoWindow: false,
       activeMarker: {},
       selectedPlace: {},
-      shelterMarkers: []
+      shelterMarkers: [],
+      foodMarkers: [],
+      clincMarkers: []
     };
     this.onMarkerClick = this.onMarkerClick.bind(this);
     this.onMapClicked = this.onMapClicked.bind(this);
@@ -28,7 +30,7 @@ export class MapContainer extends React.Component {
       console.log('wtf');
       console.log(error);
     });
-    this.setState({shelterMarkers: testData.results});
+    this.setState({shelterMarkers: shelterData, foodMarkers: foodData, clinicMarkers: clinicData});
   }
 
   onMarkerClick (props, marker, e) {
@@ -67,6 +69,34 @@ export class MapContainer extends React.Component {
           position={shelter.geometry.location}
           icon={{
             url: "assets/housing_pin.png",
+            anchor: new this.props.google.maps.Point(32,32),
+            scaledSize: new this.props.google.maps.Size(64,64)
+          }} />
+        ))}
+
+        {this.state.foodMarkers.map((food) => (
+          <Marker
+          onClick={this.onMarkerClick}
+          key={shortid.generate()}
+          name={food.name}
+          address={food.formatted_address}
+          position={food.geometry.location}
+          icon={{
+            url: "assets/food_pin.png",
+            anchor: new this.props.google.maps.Point(32,32),
+            scaledSize: new this.props.google.maps.Size(64,64)
+          }} />
+        ))}
+
+        {this.state.clinicMarkers.map((clinic) => (
+          <Marker
+          onClick={this.onMarkerClick}
+          key={shortid.generate()}
+          name={clinic.name}
+          address={clinic.formatted_address}
+          position={clinic.geometry.location}
+          icon={{
+            url: "assets/clinic_pin.png",
             anchor: new this.props.google.maps.Point(32,32),
             scaledSize: new this.props.google.maps.Size(64,64)
           }} />
