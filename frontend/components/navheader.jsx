@@ -41,13 +41,13 @@ export default class NavHeader extends React.Component {
             <NavItem eventKey={3} href="https://github.com/jeffreychuc/Link-Frontend" target="_blank">
               Github
             </NavItem>
-            <NavDropdown eventKey={4} title="More" id="basic-nav-dropdown">
-              <MenuItem eventKey={4.1}>Contact Us</MenuItem>
+            {/* <NavDropdown eventKey={4} title="More" id="basic-nav-dropdown">
+              <MenuItem eventKey={4.1}>Contact Us</MenuItem> */}
               {/* <MenuItem eventKey={4.2}>Another action</MenuItem>
               <MenuItem eventKey={4.3}>Something else here</MenuItem>
               <MenuItem divider />
               <MenuItem eventKey={4.3}>Separated link</MenuItem> */}
-            </NavDropdown>
+            {/* </NavDropdown> */}
           </Nav>
         </Navbar.Collapse>
       </Navbar>

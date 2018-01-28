@@ -27,7 +27,7 @@ export default class Splash extends React.Component {
         <button onClick={() => this.handleMap()} className="splash-button">Preview Now</button>
         <div className="splash_phone">
           <img
-            src="https://res.cloudinary.com/trwong/image/upload/v1517105698/imageedit_2_7721807844_rodzu1.png"
+            src="https://res.cloudinary.com/trwong/image/upload/v1517120829/splash_iphone_imwrpb.png"
             alt="iphone with response from Link"  />
         </div>
       </div>
