@@ -53,8 +53,6 @@ export default class SampleInputs extends React.Component {
               Are there any open clinics nearby? I'm in SF.
             </div>
           </div>
-        
-
         </div>
       </div>
     );

@@ -57,13 +57,8 @@ export class MapContainer extends React.Component {
 
   render() {
     return this.props.google ? (
-<<<<<<< HEAD
       <div className='mapFrame'>
         <h2 className='header'>Nearby Services</h2>
-=======
-      <div className='mapFrame' id="map-container">
-
->>>>>>> 61509ff8669157a845df70c4454648c7492f9fe8
         <Map google={this.props.google}
             onClick={this.onMapClicked}
             style={{margin: '0 auto', width: '90%', height: '90%', position: 'relative'}}
