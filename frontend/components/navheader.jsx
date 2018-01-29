@@ -13,7 +13,7 @@ export default class NavHeader extends React.Component {
           <Navbar.Brand className="header-brand">
             <a href="#brand">
               <img
-                src="https://res.cloudinary.com/trwong/image/upload/v1517102892/white-link_lnsvx8.png"
+                src="https://res.cloudinary.com/trwong/image/upload/v1517261149/white-link_lnsvx8_stmdmf.png"
                 alt="link-logo"
                 className="link-logo"
                 />
