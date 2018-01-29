@@ -1,9 +1,10 @@
 import React from 'react';
-import axios from 'axios';
 import shortid from 'shortid';
 import { Map, InfoWindow, Marker, GoogleApiWrapper } from 'google-maps-react';
 import { shelterData, foodData, clinicData } from './data.js';
-import Contact from './contact_container';
+import isEqual from 'lodash/isEqual';
+import merge from 'lodash/merge';
+
 
 
 export class MapContainer extends React.Component {
@@ -36,7 +37,6 @@ export class MapContainer extends React.Component {
   }
 
   onMarkerClick (props, marker, e) {
-    console.log('marker was clicked');
     this.setState({
       selectedPlace: props,
       activeMarker: marker,
@@ -45,7 +45,6 @@ export class MapContainer extends React.Component {
   }
 
   onMapClicked (props) {
-    console.log('map was clicked');
     if (this.state.showingInfoWindow) {
       this.setState({
         showingInfoWindow: false,
@@ -64,7 +63,7 @@ export class MapContainer extends React.Component {
             style={{margin: '0 auto', width: '90%', height: '90%', position: 'relative'}}
             className={'map'}
             zoom={15}>
-          {this.state.shelterMarkers.map((shelter) => (
+          {this.props.renderShelters ? this.state.shelterMarkers.map((shelter) => (
             <Marker
             onClick={this.onMarkerClick}
             key={shortid.generate()}
@@ -76,9 +75,9 @@ export class MapContainer extends React.Component {
               anchor: new this.props.google.maps.Point(32,32),
               scaledSize: new this.props.google.maps.Size(64,64)
             }} />
-          ))}
+          )): null}
 
-          {this.state.foodMarkers.map((food) => (
+          {this.props.renderFood ? this.state.foodMarkers.map((food) => (
             <Marker
             onClick={this.onMarkerClick}
             key={shortid.generate()}
@@ -90,9 +89,9 @@ export class MapContainer extends React.Component {
               anchor: new this.props.google.maps.Point(32,32),
               scaledSize: new this.props.google.maps.Size(64,64)
             }} />
-          ))}
+          )): null}
 
-          {this.state.clinicMarkers.map((clinic) => (
+          {this.props.renderClinics ? this.state.clinicMarkers.map((clinic) => (
             <Marker
             onClick={this.onMarkerClick}
             key={shortid.generate()}
@@ -104,7 +103,7 @@ export class MapContainer extends React.Component {
               anchor: new this.props.google.maps.Point(32,32),
               scaledSize: new this.props.google.maps.Size(64,64)
             }} />
-          ))}
+          )) : null}
 
           <InfoWindow
             marker={this.state.activeMarker}

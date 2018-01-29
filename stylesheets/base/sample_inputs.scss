@@ -37,12 +37,29 @@
   font-size: 18px;
   position: relative;
   font-weight: 500;
-
   display: flex;
+
+  // display: inline-block;
+  vertical-align: middle;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -moz-osx-font-smoothing: grayscale;
+  transition-duration: 0.3s;
+  transition-property: transform;
+
+  // flex-direction: column;
   div {
     margin-left: 10px;
   }
 }
+
+.sample-container:hover,
+.sample-container:focus,
+.sample-container:active {
+  cursor: pointer;
+  transform: scale(1.1);
+}
+
 
 .gradient-border {
   position: absolute;
