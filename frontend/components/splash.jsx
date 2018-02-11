@@ -39,7 +39,7 @@ export default class Splash extends React.Component {
     }
     return (
       <h3>
-
+        Your text is on its way!
       </h3>
       );
   }
@@ -49,7 +49,7 @@ export default class Splash extends React.Component {
       case 2:
         return (
           <div>
-            <input type="text" placeholder="415-555-5555"/>
+            <input className='phoneNumberInput' type="text" placeholder="415-555-5555"/>
           </div>
         );
     }
@@ -108,3 +108,5 @@ export default class Splash extends React.Component {
     );
   }
 }
+
+
