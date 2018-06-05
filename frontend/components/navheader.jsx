@@ -4,6 +4,17 @@ import { Navbar, Nav, NavItem, MenuItem, NavDropdown } from 'react-bootstrap';
 export default class NavHeader extends React.Component {
   constructor(props) {
     super(props);
+    this.smoothScroll = this.smoothScroll.bind(this);
+  }
+
+  smoothScroll(h) {
+    let i = h || 0;
+    if (i < 1000) {
+      setTimeout(() => {
+        window.scrollTo(0, i);
+        this.smoothScroll(i + 30);
+      }, 1);
+    }
   }
 
   render() {
@@ -23,19 +34,19 @@ export default class NavHeader extends React.Component {
           <Navbar.Toggle />
         </Navbar.Header>
         <Navbar.Collapse>
-          <Nav>
-            {/* <NavItem eventKey={1} href="#">
+          {/* <Nav>
+            <NavItem eventKey={1} href="#">
               Link
             </NavItem>
             <NavItem eventKey={2} href="#">
               Link
-            </NavItem> */}
-          </Nav>
+            </NavItem>
+          </Nav> */}
           <Nav pullRight>
             <NavItem eventKey={1} href="#" onClick={() => window.scrollTo(0, 0)}>
               Home
             </NavItem>
-            <NavItem eventKey={2} href="#" onClick={ () => window.scrollTo(0, document.body.scrollHeight)}>
+            <NavItem eventKey={2} href="#" onClick={ () => this.smoothScroll()}>
               About
             </NavItem>
             <NavItem eventKey={3} href="https://github.com/jeffreychuc/Link-Frontend" target="_blank">
